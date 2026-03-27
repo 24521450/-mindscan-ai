@@ -1,5 +1,5 @@
 ```
-# 🧠 Hello Mindscan AI — Student Mental Wellness Survey & Recommendation System
+# 🧠 Mindscan AI — Student Mental Wellness Survey & Recommendation System
 
 > A full-stack AI-powered web application that analyzes student stress levels from survey inputs and delivers personalized mental wellness recommendations.
 
