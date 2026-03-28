@@ -411,7 +411,7 @@ export default function App() {
           aria-valuenow={value}
           className={`w-full appearance-none bg-transparent rounded-full cursor-grab active:cursor-grabbing ${heightClass} ${thumbSizeClass} focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-[var(--thumb-color)] [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-[var(--thumb-color)] [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:transition-transform relative z-10`}
           style={{
-            background: `linear-gradient(to right, ${currentColor} ${percentage}%, #e5e7eb ${percentage}%)`,
+            background: `linear-gradient(to right, ${currentColor} ${percentage}%, ${isDarkMode ? '#374151' : '#e5e7eb'} ${percentage}%)`,
             '--thumb-color': currentColor,
           } as React.CSSProperties}
         />
@@ -422,19 +422,19 @@ export default function App() {
   const renderConsentScreen = () => (
     <motion.div 
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-      className="relative bg-white/25 backdrop-blur-3xl border border-white/40 shadow-[0_16px_48px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.9)] rounded-[2rem] overflow-hidden p-8 md:p-12 max-w-3xl mx-auto text-left"
+      className={`relative backdrop-blur-3xl shadow-[0_16px_48px_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.9)] rounded-[2rem] overflow-hidden p-8 md:p-12 max-w-3xl mx-auto text-left ${isDarkMode ? 'bg-[#0b132b]/80 border border-white/10 text-white' : 'bg-white/25 border border-white/40'}`}
     >
-      <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-6">
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 ${isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
         <ShieldCheck className="w-8 h-8" />
       </div>
-      <h2 className="text-3xl font-bold text-[#0b132b] mb-6">{t('consent.title')}</h2>
+      <h2 className={`text-3xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('consent.title')}</h2>
       
-      <div className="space-y-4 text-gray-600 mb-8 h-64 overflow-y-auto pr-4">
+      <div className={`space-y-4 mb-8 h-64 overflow-y-auto pr-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
         <p>{t('consent.welcome')}</p>
-        <h3 className="font-bold text-gray-900 mt-4">{t('consent.h1')}</h3>
+        <h3 className={`font-bold mt-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t('consent.h1')}</h3>
         <p>{t('consent.p1')}</p>
         
-        <h3 className="font-bold text-gray-900 mt-4">{t('consent.h2')}</h3>
+        <h3 className={`font-bold mt-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t('consent.h2')}</h3>
         <p dangerouslySetInnerHTML={{ __html: t('consent.p2')
           .replace('ẩn danh', '<strong>ẩn danh</strong>')
           .replace('anonymously', '<strong>anonymously</strong>')
@@ -442,7 +442,7 @@ export default function App() {
           .replace('完全匿名', '<strong>完全匿名</strong>') 
         }} />
         
-        <h3 className="font-bold text-gray-900 mt-4">{t('consent.h3')}</h3>
+        <h3 className={`font-bold mt-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{t('consent.h3')}</h3>
         <p dangerouslySetInnerHTML={{ __html: t('consent.p3')
           .replace('Kết quả từ hệ thống không thay thế cho chẩn đoán y khoa hoặc lời khuyên từ chuyên gia tâm lý/bác sĩ.', '<strong>Kết quả từ hệ thống không thay thế cho chẩn đoán y khoa hoặc lời khuyên từ chuyên gia tâm lý/bác sĩ.</strong>')
           .replace('Results do not substitute medical diagnoses or professional psychiatric advice.', '<strong>Results do not substitute medical diagnoses or professional psychiatric advice.</strong>')
@@ -454,13 +454,13 @@ export default function App() {
       <div className="flex flex-col sm:flex-row gap-4 justify-end">
         <button 
           onClick={() => setIsSurveyOpen(false)}
-          className="px-6 py-3 rounded-xl font-medium text-gray-600 bg-white/20 border border-white/30 hover:bg-white/30 transition-all backdrop-blur-sm"
+          className={`px-6 py-3 rounded-xl font-medium transition-all backdrop-blur-sm ${isDarkMode ? 'text-gray-300 bg-white/10 border border-white/20 hover:bg-white/20' : 'text-gray-600 bg-white/20 border border-white/30 hover:bg-white/30'}`}
         >
           {t('consent.btnDecline')}
         </button>
         <button 
           onClick={acceptConsent}
-          className="relative overflow-hidden group px-8 py-3 rounded-full font-semibold bg-white/30 backdrop-blur-2xl text-blue-700 border border-white/50 shadow-[0_8px_32px_rgba(59,130,246,0.2)] hover:bg-white/50 hover:-translate-y-0.5 transition-all duration-300"
+          className={`relative overflow-hidden group px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-[0_8px_32px_rgba(59,130,246,0.2)] hover:-translate-y-0.5 ${isDarkMode ? 'bg-blue-600 text-white border border-blue-500/50 hover:bg-blue-500' : 'bg-white/30 backdrop-blur-2xl text-blue-700 border border-white/50 hover:bg-white/50'}`}
         >
           <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
           {t('consent.btnAccept')}
@@ -567,22 +567,22 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-            className="relative bg-white/30 backdrop-blur-3xl border border-white/50 shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-lg w-full text-center"
+            className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-lg w-full text-center ${isDarkMode ? 'bg-[#0b132b]/80 border border-white/10' : 'bg-white/30 border border-white/50'}`}
           >
-            <div className="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'}`}>
               <AlertTriangle className="w-10 h-10" />
             </div>
-            <h2 className="text-2xl font-bold text-red-600 mb-4">{t('emergency.title')}</h2>
-            <p className="text-gray-600 mb-6 text-lg" dangerouslySetInnerHTML={{ __html: t('emergency.desc').replace('rất cao', '<strong>rất cao</strong>').replace('extremely high', '<strong>extremely high</strong>') }} />
+            <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{t('emergency.title')}</h2>
+            <p className={`mb-6 text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`} dangerouslySetInnerHTML={{ __html: t('emergency.desc').replace('rất cao', '<strong>rất cao</strong>').replace('extremely high', '<strong>extremely high</strong>') }} />
             
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8 text-left">
+            <div className={`rounded-2xl p-6 mb-8 text-left ${isDarkMode ? 'bg-red-900/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}>
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-red-600 shadow-sm">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-sm ${isDarkMode ? 'bg-red-500/20 text-red-400' : 'bg-white text-red-600'}`}>
                   <PhoneCall className="w-6 h-6" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500 font-medium">{t('emergency.hotlineLabel')}</div>
-                  <div className="text-2xl font-bold text-red-600">1800 599 920</div>
+                  <div className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t('emergency.hotlineLabel')}</div>
+                  <div className={`text-2xl font-bold ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>1800 599 920</div>
                 </div>
               </div>
               <a 
@@ -593,11 +593,11 @@ export default function App() {
               </a>
             </div>
 
-            <div className="text-sm text-gray-500 mb-6" dangerouslySetInnerHTML={{ __html: t('emergency.clinic').replace('Phòng Tư vấn Tâm lý', '<strong>Phòng Tư vấn Tâm lý</strong>').replace('University Counseling Center', '<strong>University Counseling Center</strong>') }} />
+            <div className={`text-sm mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} dangerouslySetInnerHTML={{ __html: t('emergency.clinic').replace('Phòng Tư vấn Tâm lý', '<strong>Phòng Tư vấn Tâm lý</strong>').replace('University Counseling Center', '<strong>University Counseling Center</strong>') }} />
 
             <button 
               onClick={() => setShowEmergencyModal(false)}
-              className="text-gray-500 hover:text-gray-800 font-medium underline"
+              className={`font-medium underline ${isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-800'}`}
             >
               {t('emergency.btnUnderstand')}
             </button>
@@ -612,43 +612,43 @@ export default function App() {
       case 1:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-            <h2 className="text-2xl font-bold text-[#0b132b] mb-6">{t('questions.s1Title')}</h2>
+            <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('questions.s1Title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q1')}</label>
-                <input type="number" min="10" max="100" value={formData.age} onChange={(e) => handleInputChange('age', e.target.value)} placeholder="20" className="w-full p-3 border border-gray-300 rounded-xl bg-white focus:ring-2 focus:ring-blue-600 outline-none" />
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q1')}</label>
+                <input type="number" min="10" max="100" value={formData.age} onChange={(e) => handleInputChange('age', e.target.value)} placeholder="20" className={`w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-600 outline-none ${isDarkMode ? 'bg-[#0b132b]/50 border-white/20 text-white' : 'bg-white border-gray-300'}`} />
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q2')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q2')}</label>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { val: 'Nam', label: t('questions.genderMale') }, 
                     { val: 'Nữ', label: t('questions.genderFemale') }, 
                     { val: 'Khác', label: t('questions.genderOther') }
                   ].map(gender => (
-                    <button key={gender.val} onClick={() => handleInputChange('gender', gender.val)} className={`px-4 py-2 rounded-full text-sm font-medium border ${formData.gender === gender.val ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}>{gender.label}</button>
+                    <button key={gender.val} onClick={() => handleInputChange('gender', gender.val)} className={`px-4 py-2 rounded-full text-sm font-medium border ${formData.gender === gender.val ? 'bg-blue-600 text-white border-blue-600' : isDarkMode ? 'bg-white/10 text-gray-300 border-white/20 hover:bg-white/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>{gender.label}</button>
                   ))}
                 </div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q3')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q3')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.academic_performance} onChange={(v) => handleInputChange('academic_performance', v)} ariaLabel="Academic performance" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q4')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q4')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.study_load} onChange={(v) => handleInputChange('study_load', v)} ariaLabel="Study load" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q5')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q5')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.teacher_student_relationship} onChange={(v) => handleInputChange('teacher_student_relationship', v)} ariaLabel="Teacher relationship" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q6')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q6')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.future_career_concerns} onChange={(v) => handleInputChange('future_career_concerns', v)} ariaLabel="Career concern" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
             </div>
           </motion.div>
@@ -656,31 +656,31 @@ export default function App() {
       case 2:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-            <h2 className="text-2xl font-bold text-[#0b132b] mb-6">{t('questions.s2Title')}</h2>
+            <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('questions.s2Title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q7')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q7')}</label>
                 <CustomSlider min={0} max={21} step={1} value={formData.anxiety_level} onChange={(v) => handleInputChange('anxiety_level', v)} ariaLabel="Anxiety" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>21</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>21</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q8')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q8')}</label>
                 <CustomSlider min={0} max={27} step={1} value={formData.depression} onChange={(v) => handleInputChange('depression', v)} ariaLabel="Depression" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>27</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>27</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q9')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q9')}</label>
                 <CustomSlider min={0} max={30} step={1} value={formData.self_esteem} onChange={(v) => handleInputChange('self_esteem', v)} ariaLabel="Self Esteem" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>30</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>30</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q10')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q10')}</label>
                 <div className="flex gap-4">
                   {[
                     { val: 'Có', label: t('questions.yes') },
                     { val: 'Không', label: t('questions.no') }
                   ].map(opt => (
-                    <button key={opt.val} onClick={() => handleInputChange('mental_health_history', opt.val)} className={`px-6 py-2 rounded-xl text-sm font-medium border ${formData.mental_health_history === opt.val ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}>{opt.label}</button>
+                    <button key={opt.val} onClick={() => handleInputChange('mental_health_history', opt.val)} className={`px-6 py-2 rounded-xl text-sm font-medium border ${formData.mental_health_history === opt.val ? 'bg-blue-600 text-white border-blue-600' : isDarkMode ? 'bg-white/10 text-gray-300 border-white/20 hover:bg-white/20' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>{opt.label}</button>
                   ))}
                 </div>
               </div>
@@ -690,30 +690,30 @@ export default function App() {
       case 3:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-            <h2 className="text-2xl font-bold text-[#0b132b] mb-6">{t('questions.s3Title')}</h2>
+            <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('questions.s3Title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q11')}</label>
-                <select value={formData.blood_pressure} onChange={(e) => handleInputChange('blood_pressure', parseInt(e.target.value))} className="w-full p-3 border border-gray-300 rounded-xl bg-white outline-none">
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q11')}</label>
+                <select value={formData.blood_pressure} onChange={(e) => handleInputChange('blood_pressure', parseInt(e.target.value))} className={`w-full p-3 border rounded-xl outline-none ${isDarkMode ? 'bg-[#0b132b] text-white border-white/20' : 'bg-white border-gray-300'}`}>
                   <option value={1}>{t('questions.bpLow')}</option>
                   <option value={2}>{t('questions.bpNormal')}</option>
                   <option value={3}>{t('questions.bpHigh')}</option>
                 </select>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q12')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q12')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.sleep_quality} onChange={(v) => handleInputChange('sleep_quality', v)} ariaLabel="Sleep" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q13')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q13')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.headache} onChange={(v) => handleInputChange('headache', v)} ariaLabel="Headache" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q14')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q14')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.breathing_problem} onChange={(v) => handleInputChange('breathing_problem', v)} ariaLabel="Breathing" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
             </div>
           </motion.div>
@@ -721,27 +721,27 @@ export default function App() {
       case 4:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-            <h2 className="text-2xl font-bold text-[#0b132b] mb-6">{t('questions.s4Title')}</h2>
+            <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('questions.s4Title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q15')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q15')}</label>
                 <CustomSlider min={0} max={3} step={1} value={formData.social_support} onChange={(v) => handleInputChange('social_support', v)} ariaLabel="Social support" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>3</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>3</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q16')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q16')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.peer_pressure} onChange={(v) => handleInputChange('peer_pressure', v)} ariaLabel="Peer pressure" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q17')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q17')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.extracurricular_activities} onChange={(v) => handleInputChange('extracurricular_activities', v)} ariaLabel="Extracurricular" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q18')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q18')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.bullying} onChange={(v) => handleInputChange('bullying', v)} ariaLabel="Bullying" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
             </div>
           </motion.div>
@@ -749,27 +749,27 @@ export default function App() {
       case 5:
         return (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
-            <h2 className="text-2xl font-bold text-[#0b132b] mb-6">{t('questions.s5Title')}</h2>
+            <h2 className={`text-2xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('questions.s5Title')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q19')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q19')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.noise_level} onChange={(v) => handleInputChange('noise_level', v)} ariaLabel="Noise" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q20')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q20')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.living_conditions} onChange={(v) => handleInputChange('living_conditions', v)} ariaLabel="Living conditions" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q21')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q21')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.safety} onChange={(v) => handleInputChange('safety', v)} ariaLabel="Safety" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
               <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-800">{t('questions.q22')}</label>
+                <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{t('questions.q22')}</label>
                 <CustomSlider min={0} max={5} step={1} value={formData.basic_needs} onChange={(v) => handleInputChange('basic_needs', v)} ariaLabel="Basic needs" />
-                <div className="flex justify-between text-xs text-gray-600"><span>0</span><span>5</span></div>
+                <div className={`flex justify-between text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}><span>0</span><span>5</span></div>
               </div>
             </div>
           </motion.div>
@@ -915,22 +915,25 @@ export default function App() {
             </>
           )}
           {/* Language switcher — always visible */}
-          <div className="relative flex items-center bg-white border border-gray-200 shadow-sm rounded-full pl-3 pr-8 py-2 hover:shadow-md transition-shadow cursor-pointer group">
-            <Globe className="w-4 h-4 text-gray-500 mr-2 group-hover:text-blue-600 transition-colors" />
+          <div className="relative flex items-center bg-black/90 rounded-full p-1 pr-4 cursor-pointer hover:bg-black transition-colors border border-white/10 shadow-lg shadow-black/20 group">
+            <img 
+              src={`https://hatscripts.github.io/circle-flags/flags/${language === 'vi' ? 'vn' : language === 'en' ? 'gb' : language === 'de' ? 'de' : 'cn'}.svg`} 
+              alt="flag" 
+              className="w-7 h-7 rounded-full object-cover mr-3 bg-white/10"
+            />
+            <span className="text-[15px] font-bold tracking-wider text-white select-none pointer-events-none mt-[1px]">
+              {language === 'vi' ? 'VI' : language === 'en' ? 'EN' : language === 'de' ? 'DE' : 'ZH'}
+            </span>
             <select 
               value={language}
               onChange={(e) => setLanguage(e.target.value as any)}
-              className="bg-transparent text-sm font-medium text-gray-700 outline-none cursor-pointer appearance-none absolute inset-0 opacity-0 w-full h-full"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             >
-              <option value="vi">Tiếng Việt</option>
-              <option value="en">English</option>
-              <option value="de">Deutsch</option>
-              <option value="zh">中文</option>
+              <option value="vi">Tiếng Việt (VI)</option>
+              <option value="en">English (EN)</option>
+              <option value="de">Deutsch (DE)</option>
+              <option value="zh">中文 (ZH)</option>
             </select>
-            <span className="text-sm font-medium text-gray-700 select-none pointer-events-none">
-              {language === 'vi' ? 'VI' : language === 'en' ? 'EN' : language === 'de' ? 'DE' : 'ZH'}
-            </span>
-            <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 pointer-events-none group-hover:text-blue-600 transition-colors" />
           </div>
         </div>
       </div>
@@ -942,38 +945,43 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" onClick={() => setShowPrivacyModal(false)}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-              className="relative bg-white/30 backdrop-blur-3xl border border-white/50 shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-2xl w-full text-left max-h-[85vh] overflow-y-auto"
+              className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-2xl w-full text-left max-h-[85vh] overflow-y-auto ${isDarkMode ? 'bg-[#0b132b]/95 border border-white/10' : 'bg-white/30 border border-white/50'}`}
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-blue-500/20 border border-blue-300/40 rounded-2xl flex items-center justify-center text-blue-600">
                   <Lock className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#0b132b]">Chính sách Bảo mật</h2>
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>Chính sách Bảo mật</h2>
               </div>
-              <div className="space-y-5 text-gray-700 text-sm leading-relaxed">
+              <div className={`space-y-5 text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Nguyên tắc Ẩn danh (Anonymization)</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Nguyên tắc Ẩn danh (Anonymization)</h3>
                   <p>Hệ thống tuyệt đối không thu thập các thông tin định danh cá nhân (PII) như Họ tên, MSSV, Email, Số điện thoại hoặc địa chỉ IP.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Mã hóa Dữ liệu</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Mã hóa Dữ liệu</h3>
                   <p>Mọi phản hồi từ người dùng đều được mã hóa trước khi lưu trữ vào cơ sở dữ liệu. Các phiên làm việc (Session ID) được tạo ngẫu nhiên và không liên kết với thông tin thực tế của bạn.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Bảo mật Kỹ thuật</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Bảo mật Kỹ thuật</h3>
                   <p>Toàn bộ giao tiếp giữa thiết bị của bạn và máy chủ được bảo vệ qua giao thức HTTPS. Quyền truy cập quản trị được kiểm soát nghiêm ngặt bằng mã xác thực (JWT).</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Giới hạn Lưu trữ</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Giới hạn Lưu trữ</h3>
                   <p>Dữ liệu chỉ phục vụ cho mục đích nghiên cứu học thuật của môn học <strong>MSIS3033</strong>. Toàn bộ dữ liệu sẽ được xóa sạch trong vòng <strong>3 tháng</strong> sau khi dự án kết thúc.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Báo cáo Tổng hợp</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Báo cáo Tổng hợp</h3>
                   <p>Các kết quả thống kê chỉ hiển thị dưới dạng dữ liệu gộp (như tỷ lệ theo giới tính, năm học), đảm bảo không một cá nhân nào có thể bị nhận diện từ báo cáo.</p>
                 </div>
               </div>
-              <button onClick={() => setShowPrivacyModal(false)} className="mt-8 w-full py-3 rounded-full font-semibold bg-white/30 border border-white/50 text-gray-700 hover:bg-white/50 transition-all">Đóng</button>
+              <button 
+                onClick={() => setShowPrivacyModal(false)} 
+                className={`mt-8 w-full py-3 rounded-full font-semibold transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-300 hover:bg-white/20' : 'bg-white/30 border border-white/50 text-gray-700 hover:bg-white/50'}`}
+              >
+                Đóng
+              </button>
             </motion.div>
           </div>
         )}
@@ -985,38 +993,43 @@ export default function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" onClick={() => setShowEthicsModal(false)}>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-              className="relative bg-white/30 backdrop-blur-3xl border border-white/50 shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-2xl w-full text-left max-h-[85vh] overflow-y-auto"
+              className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-2xl w-full text-left max-h-[85vh] overflow-y-auto ${isDarkMode ? 'bg-[#0b132b]/95 border border-white/10' : 'bg-white/30 border border-white/50'}`}
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-12 bg-green-500/20 border border-green-300/40 rounded-2xl flex items-center justify-center text-green-600">
                   <HeartHandshake className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold text-[#0b132b]">Đạo đức Nghiên cứu</h2>
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>Đạo đức Nghiên cứu</h2>
               </div>
-              <div className="space-y-5 text-gray-700 text-sm leading-relaxed">
+              <div className={`space-y-5 text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Tính Tự nguyện</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Tính Tự nguyện</h3>
                   <p>Việc tham gia khảo sát là hoàn toàn tự nguyện. Bạn có quyền dừng lại và thoát khỏi hệ thống bất cứ lúc nào mà không cần giải thích.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Giới hạn Chẩn đoán (Disclaimer)</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Giới hạn Chẩn đoán (Disclaimer)</h3>
                   <p>MindScan AI là công cụ sàng lọc sơ bộ, không phải là chẩn đoán y tế hoặc lâm sàng. Kết quả này <strong>không thay thế</strong> cho lời khuyên hoặc điều trị từ các chuyên gia sức khỏe tâm thần.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />An toàn Người dùng là Trên hết</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />An toàn Người dùng là Trên hết</h3>
                   <p>Trong trường hợp hệ thống phát hiện mức độ stress cao (High Stress), chúng tôi bắt buộc hiển thị thông tin hỗ trợ khẩn cấp và Hotline tư vấn 24/7 <strong>(1800 599 920)</strong>.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Sử dụng Ngôn ngữ</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Sử dụng Ngôn ngữ</h3>
                   <p>Hệ thống cam kết sử dụng ngôn ngữ trung lập, không gây thêm áp lực tâm lý hoặc tạo sự kỳ thị (stigma) đối với người tham gia.</p>
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 mb-2 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Công khai Hạn chế</h3>
+                  <h3 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Công khai Hạn chế</h3>
                   <p>Chúng tôi thừa nhận các hạn chế về mặt dữ liệu (như thiên kiến tự đánh giá) để đảm bảo tính trung thực và khách quan của kết quả nghiên cứu.</p>
                 </div>
               </div>
-              <button onClick={() => setShowEthicsModal(false)} className="mt-8 w-full py-3 rounded-full font-semibold bg-white/30 border border-white/50 text-gray-700 hover:bg-white/50 transition-all">Đóng</button>
+              <button 
+                onClick={() => setShowEthicsModal(false)} 
+                className={`mt-8 w-full py-3 rounded-full font-semibold transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-300 hover:bg-white/20' : 'bg-white/30 border border-white/50 text-gray-700 hover:bg-white/50'}`}
+              >
+                Đóng
+              </button>
             </motion.div>
           </div>
         )}
@@ -1227,20 +1240,20 @@ export default function App() {
             <footer className="border-t border-white/30 bg-white/10 backdrop-blur-2xl pt-12 pb-8 relative z-10">
               <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
-                  <div className="text-xl font-bold mb-2 text-[#0b132b]">{t('appName')}</div>
-                  <div className="text-sm text-gray-500">© 2026 MindScan AI: Thấu hiểu áp lực – Sẻ chia giải pháp.</div>
+                  <div className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('appName')}</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>© 2026 MindScan AI: Thấu hiểu áp lực – Sẻ chia giải pháp.</div>
                 </div>
                 
-                <div className="flex items-center gap-6 text-sm text-gray-500">
-                  <button onClick={() => setShowPrivacyModal(true)} className="hover:text-gray-900 transition-colors">{t('footer.privacy')}</button>
-                  <button onClick={() => setShowEthicsModal(true)} className="hover:text-gray-900 transition-colors">{t('footer.ethics')}</button>
+                <div className={`flex items-center gap-6 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <button onClick={() => setShowPrivacyModal(true)} className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-gray-900'}`}>{t('footer.privacy')}</button>
+                  <button onClick={() => setShowEthicsModal(true)} className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-gray-900'}`}>{t('footer.ethics')}</button>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <button className="w-10 h-10 rounded-full bg-white/30 backdrop-blur-sm border border-white/40 flex items-center justify-center text-gray-500 hover:bg-white/50 transition-all">
+                  <button className={`w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-400 hover:bg-white/20 hover:text-white' : 'bg-white/30 border border-white/40 text-gray-500 hover:bg-white/50 hover:text-gray-900'}`}>
                     <Share2 className="w-4 h-4" />
                   </button>
-                  <button className="w-10 h-10 rounded-full bg-white/30 backdrop-blur-sm border border-white/40 flex items-center justify-center text-gray-500 hover:bg-white/50 transition-all">
+                  <button className={`w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-400 hover:bg-white/20 hover:text-white' : 'bg-white/30 border border-white/40 text-gray-500 hover:bg-white/50 hover:text-gray-900'}`}>
                     <Mail className="w-4 h-4" />
                   </button>
                 </div>
@@ -1321,8 +1334,8 @@ export default function App() {
                 {isAnalyzing ? (
                   <div className="text-center py-12">
                     <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-                    <h2 className="text-2xl font-bold text-[#0b132b] mb-2">{t('survey.analyzingTitle')}</h2>
-                    <p className="text-gray-500">{t('survey.analyzingDesc')}</p>
+                    <h2 className={`text-2xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('survey.analyzingTitle')}</h2>
+                    <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>{t('survey.analyzingDesc')}</p>
                   </div>
                 ) : aiResult ? (
                   <div className="text-left w-full max-w-4xl mx-auto">
@@ -1334,12 +1347,12 @@ export default function App() {
 
                     {/* 2. Biểu đồ Stacked Bar - Yếu tố tác động */}
                     <div className="mb-12">
-                      <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">{t('results.featureTitle')}</h3>
+                      <h3 className={`text-xl font-bold mb-6 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{t('results.featureTitle')}</h3>
                       
                       {/* Legend */}
                       <div className="flex flex-wrap justify-center gap-4 mb-4">
                         {aiResult.feature_importance.map((item: any, idx: number) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                          <div key={idx} className={`flex items-center gap-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
                             {item.feature}
                           </div>
@@ -1352,10 +1365,10 @@ export default function App() {
                     {/* 3. Biểu đồ Line/Bar (Lịch sử ẩn danh) */}
                     {sessionHistory.length > 0 && (
                       <div className="mb-12">
-                        <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">{t('results.historyTitle')}</h3>
+                        <h3 className={`text-xl font-bold mb-6 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{t('results.historyTitle')}</h3>
                         <div className="space-y-4">
                           {sessionHistory.map((session, idx) => (
-                            <div key={idx} className="flex items-center gap-4 bg-white/20 backdrop-blur-sm border border-white/30 p-4 rounded-2xl">
+                            <div key={idx} className={`flex items-center gap-4 backdrop-blur-sm border p-4 rounded-2xl ${isDarkMode ? 'bg-[#0b132b]/50 border-white/10' : 'bg-white/20 border-white/30'}`}>
                               <div className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap ${
                                 session.level === 'High' ? 'bg-red-100 text-red-700' :
                                 session.level === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
@@ -1374,18 +1387,18 @@ export default function App() {
 
                     {/* 4. Action Cards — icon mapped by language-agnostic categoryKey */}
                     <div className="mb-12">
-                      <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">{t('results.recsTitle')}</h3>
+                      <h3 className={`text-xl font-bold mb-6 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{t('results.recsTitle')}</h3>
                       <div className="grid md:grid-cols-2 gap-4">
                         {(showAllRecs ? aiResult.recommendations : aiResult.recommendations.slice(0, 4)).map((rec, idx) => {
                           const key = (rec as any).categoryKey || '';
                           let Icon = Brain;
-                          let colorClass = 'bg-blue-100 text-blue-600';
-                          if (key === 'sleep')    { Icon = Moon;        colorClass = 'bg-[#a7f3d0] text-[#047857]'; }
-                          else if (key === 'study')   { Icon = BookOpen;    colorClass = 'bg-[#99f6e4] text-[#0f766e]'; }
-                          else if (key === 'social')  { Icon = Users;       colorClass = 'bg-[#e9d5ff] text-[#7e22ce]'; }
-                          else if (key === 'exercise'){ Icon = Activity;    colorClass = 'bg-[#e2e8f0] text-[#334155]'; }
-                          else if (key === 'finance') { Icon = DollarSign;  colorClass = 'bg-[#fecdd3] text-[#be123c]'; }
-                          else if (key === 'mental')  { Icon = HeartHandshake; colorClass = 'bg-purple-100 text-purple-600'; }
+                          let colorClass = isDarkMode ? 'bg-blue-900/50 text-blue-400 border border-blue-800' : 'bg-blue-100 text-blue-600';
+                          if (key === 'sleep')    { Icon = Moon;        colorClass = isDarkMode ? 'bg-emerald-900/50 text-emerald-400 border border-emerald-800' : 'bg-[#a7f3d0] text-[#047857]'; }
+                          else if (key === 'study')   { Icon = BookOpen;    colorClass = isDarkMode ? 'bg-teal-900/50 text-teal-400 border border-teal-800' : 'bg-[#99f6e4] text-[#0f766e]'; }
+                          else if (key === 'social')  { Icon = Users;       colorClass = isDarkMode ? 'bg-purple-900/50 text-purple-400 border border-purple-800' : 'bg-[#e9d5ff] text-[#7e22ce]'; }
+                          else if (key === 'exercise'){ Icon = Activity;    colorClass = isDarkMode ? 'bg-slate-800 border border-slate-700 text-slate-300' : 'bg-[#e2e8f0] text-[#334155]'; }
+                          else if (key === 'finance') { Icon = DollarSign;  colorClass = isDarkMode ? 'bg-rose-900/50 text-rose-400 border border-rose-800' : 'bg-[#fecdd3] text-[#be123c]'; }
+                          else if (key === 'mental')  { Icon = HeartHandshake; colorClass = isDarkMode ? 'bg-purple-900/50 text-purple-400 border border-purple-800' : 'bg-purple-100 text-purple-600'; }
 
                           return (
                             <ActionCard 
@@ -1410,7 +1423,7 @@ export default function App() {
                         <div className="text-center mt-6">
                           <button
                             onClick={() => setShowAllRecs(prev => !prev)}
-                            className="text-blue-600 hover:text-blue-800 font-medium text-sm underline underline-offset-4"
+                            className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} font-medium text-sm underline underline-offset-4`}
                           >
                             {showAllRecs
                               ? (language === 'vi' ? 'Thu gọn' : language === 'de' ? 'Weniger anzeigen' : language === 'zh' ? '收起' : 'Show less')
@@ -1422,9 +1435,9 @@ export default function App() {
                     </div>
 
                     {/* 5. Disclaimer & Quyền riêng tư */}
-                    <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-                      <p>{t('results.disclaimer')}</p>
-                      <div className="flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-full font-medium">
+                    <div className="mt-12 pt-8 border-t border-gray-100/20 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+                      <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>{t('results.disclaimer')}</p>
+                      <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium ${isDarkMode ? 'bg-green-900/30 text-green-400 border border-green-800/50' : 'bg-green-50 text-green-700'}`}>
                         <ShieldCheck className="w-4 h-4" />
                         {t('results.consentConfirmed')}
                       </div>
@@ -1439,7 +1452,7 @@ export default function App() {
                           setAiResult(null);
                           setShowAllRecs(false);
                         }}
-                        className="text-gray-500 hover:text-gray-800 font-medium underline underline-offset-4"
+                        className={`font-medium underline underline-offset-4 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}
                       >
                         {t('results.btnHome')}
                       </button>
@@ -1448,11 +1461,11 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-red-900/30 text-red-500' : 'bg-red-100 text-red-500'}`}>
                       <AlertTriangle className="w-10 h-10" />
                     </div>
-                    <h2 className="text-2xl font-bold text-[#0b132b] mb-4">{t('results.errorTitle')}</h2>
-                    <p className="text-gray-500 mb-8">{t('results.errorDesc')}</p>
+                    <h2 className={`text-2xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('results.errorTitle')}</h2>
+                    <p className={`mb-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{t('results.errorDesc')}</p>
                     <button 
                       onClick={() => {
                         setIsSurveyOpen(false);
