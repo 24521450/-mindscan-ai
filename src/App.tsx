@@ -803,9 +803,9 @@ export default function App() {
         <div className="flex items-center gap-12">
           <div className={`text-2xl font-bold tracking-tight cursor-pointer transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`} onClick={() => {setIsSurveyOpen(false); setIsCompleted(false); setCurrentStep(1);}}>{t('appName')}</div>
           {!isSurveyOpen && (
-            <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-500">
-              <a href="#solutions" className="text-blue-600 border-b-2 border-blue-600 pb-1">{t('nav.solutions')}</a>
-              <a href="#technology" className="hover:text-gray-900 pb-1">{t('nav.technology')}</a>
+            <nav className={`hidden md:flex items-center gap-8 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+              <a href="#solutions" className={`${isDarkMode ? 'text-blue-400 border-blue-400' : 'text-blue-600 border-blue-600'} border-b-2 pb-1`}>{t('nav.solutions')}</a>
+              <a href="#technology" className={`pb-1 transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-gray-900'}`}>{t('nav.technology')}</a>
             </nav>
           )}
         </div>
@@ -914,26 +914,43 @@ export default function App() {
               </button>
             </>
           )}
-          {/* Language switcher — always visible */}
-          <div className="relative flex items-center bg-black/90 rounded-full p-1 pr-4 cursor-pointer hover:bg-black transition-colors border border-white/10 shadow-lg shadow-black/20 group">
-            <img 
-              src={`https://hatscripts.github.io/circle-flags/flags/${language === 'vi' ? 'vn' : language === 'en' ? 'gb' : language === 'de' ? 'de' : 'cn'}.svg`} 
-              alt="flag" 
-              className="w-7 h-7 rounded-full object-cover mr-3 bg-white/10"
-            />
-            <span className="text-[15px] font-bold tracking-wider text-white select-none pointer-events-none mt-[1px]">
-              {language === 'vi' ? 'VI' : language === 'en' ? 'EN' : language === 'de' ? 'DE' : 'ZH'}
-            </span>
-            <select 
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as any)}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            >
-              <option value="vi">Tiếng Việt (VI)</option>
-              <option value="en">English (EN)</option>
-              <option value="de">Deutsch (DE)</option>
-              <option value="zh">中文 (ZH)</option>
-            </select>
+          {/* Language switcher */}
+          <div className="relative group z-50">
+            <div className={`flex items-center rounded-full p-1 pr-4 cursor-pointer transition-colors border shadow-lg ${isDarkMode ? 'bg-black/90 hover:bg-black border-white/10 shadow-black/20' : 'bg-white/90 hover:bg-white border-gray-200 shadow-gray-200/50'}`}>
+              <img 
+                src={`https://hatscripts.github.io/circle-flags/flags/${language === 'vi' ? 'vn' : language === 'en' ? 'gb' : language === 'de' ? 'de' : 'cn'}.svg`} 
+                alt="flag" 
+                className="w-7 h-7 rounded-full object-cover mr-3 shadow-sm bg-white/10"
+              />
+              <span className={`text-[15px] font-bold tracking-wider select-none pointer-events-none mt-[1px] ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>
+                {language === 'vi' ? 'VI' : language === 'en' ? 'EN' : language === 'de' ? 'DE' : 'ZH'}
+              </span>
+            </div>
+            
+            {/* Dropdown Menu */}
+            <div className="absolute top-full right-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 translate-y-[-10px] group-hover:translate-y-0">
+              <div className={`py-2 rounded-2xl border shadow-xl backdrop-blur-xl ${isDarkMode ? 'bg-[#0f172a]/95 border-white/10 shadow-black/50' : 'bg-white/95 border-gray-200 shadow-xl'}`}>
+                {[
+                  { code: 'vi', label: 'Tiếng Việt', flag: 'vn' },
+                  { code: 'en', label: 'English', flag: 'gb' },
+                  { code: 'de', label: 'Deutsch', flag: 'de' },
+                  { code: 'zh', label: '中文', flag: 'cn' }
+                ].map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code as any)}
+                    className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${language === lang.code ? (isDarkMode ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-50 text-blue-600') : (isDarkMode ? 'text-gray-300 hover:bg-white/10 hover:text-white' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900')}`}
+                  >
+                    <img 
+                      src={`https://hatscripts.github.io/circle-flags/flags/${lang.flag}.svg`} 
+                      alt={lang.code} 
+                      className="w-5 h-5 rounded-full object-cover shadow-sm bg-white/10"
+                    />
+                    <span className="font-medium text-sm">{lang.label} ({lang.code.toUpperCase()})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1047,14 +1064,14 @@ export default function App() {
             {/* Hero Section */}
             <section className="container mx-auto px-6 pt-12 pb-24 grid lg:grid-cols-2 gap-12 items-center">
               <div className="max-w-xl">
-                <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold tracking-wide mb-6">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide mb-6 ${isDarkMode ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-green-50 text-green-700'}`}>
                   <span className="w-2 h-2 rounded-full bg-green-500"></span>
                   {t('hero.badge')}
                 </div>
-                <h1 className="text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight text-[#0b132b]">
-                  {t('hero.title1')} <span className="text-blue-600">{t('hero.title2')}</span>
+                <h1 className={`text-5xl lg:text-6xl font-extrabold leading-tight mb-6 tracking-tight ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>
+                  {t('hero.title1')} <span className={isDarkMode ? 'text-blue-400' : 'text-blue-600'}>{t('hero.title2')}</span>
                 </h1>
-                <p className="text-lg text-gray-500 mb-10 leading-relaxed">
+                <p className={`text-lg mb-10 leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('hero.subtitle')}
                 </p>
                 
