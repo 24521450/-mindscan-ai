@@ -115,7 +115,7 @@ const CustomStackedBar = ({ data, height = 'h-12', showLabels = true }: { data: 
         const color = (!item.color || item.color === '#f3f4f6') ? BAR_FALLBACK_COLORS[idx % BAR_FALLBACK_COLORS.length] : item.color;
         return (
           <div
-            key={idx}
+            key={`${item.feature}-${idx}`}
             style={{ width: `${(item.importance / total) * 100}%`, backgroundColor: color }}
             className="h-full flex items-center justify-center text-white font-bold text-sm transition-all hover:opacity-90"
             title={`${item.feature}: ${item.importance}%`}
@@ -1052,9 +1052,10 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {renderHowItWorksModal()}
+      {renderEmergencyModal()}
+
       <AnimatePresence mode="wait">
-        {renderHowItWorksModal()}
-        {renderEmergencyModal()}
         {!isSurveyOpen ? (
           <motion.div 
             key="landing"
@@ -1360,7 +1361,7 @@ export default function App() {
                       {/* Legend */}
                       <div className="flex flex-wrap justify-center gap-4 mb-4">
                         {aiResult.feature_importance.map((item: any, idx: number) => (
-                          <div key={idx} className={`flex items-center gap-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                          <div key={`legend-${item.feature}-${idx}`} className={`flex items-center gap-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                             <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
                             {item.feature}
                           </div>
@@ -1376,7 +1377,7 @@ export default function App() {
                         <h3 className={`text-xl font-bold mb-6 text-center ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>{t('results.historyTitle')}</h3>
                         <div className="space-y-4">
                           {sessionHistory.map((session, idx) => (
-                            <div key={idx} className={`flex items-center gap-4 backdrop-blur-sm border p-4 rounded-2xl ${isDarkMode ? 'bg-[#0b132b]/50 border-white/10' : 'bg-white/20 border-white/30'}`}>
+                            <div key={`history-${session.date}-${idx}`} className={`flex items-center gap-4 backdrop-blur-sm border p-4 rounded-2xl ${isDarkMode ? 'bg-[#0b132b]/50 border-white/10' : 'bg-white/20 border-white/30'}`}>
                               <div className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap ${
                                 session.level === 'High' ? 'bg-red-100 text-red-700' :
                                 session.level === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
