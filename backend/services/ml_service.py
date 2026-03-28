@@ -1,6 +1,7 @@
 import os
 import joblib
 import numpy as np
+import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,11 +27,22 @@ def get_model_and_scaler():
             # Do not raise here; allow the server to start, we'll raise an error during prediction.
     return _model, _scaler
 
+# Feature names must match exactly the order used during model training
+FEATURE_NAMES = [
+    'anxiety_level', 'self_esteem', 'mental_health_history', 'depression',
+    'headache', 'blood_pressure', 'sleep_quality', 'breathing_problem',
+    'noise_level', 'living_conditions', 'safety', 'basic_needs',
+    'academic_performance', 'study_load', 'teacher_student_relationship',
+    'future_career_concerns', 'social_support', 'peer_pressure',
+    'extracurricular_activities', 'bullying'
+]
+
 def predict_stress(input_data: dict) -> dict:
     model, scaler = get_model_and_scaler()
     if not model or not scaler:
         raise RuntimeError("Model or Scaler not loaded. Please make sure the .pkl files exist.")
 
+    # Build feature values in the exact same order as FEATURE_NAMES
     features = [
         float(input_data.get('anxiety_level', 0)),
         float(input_data.get('self_esteem', 0)),
@@ -54,48 +66,37 @@ def predict_stress(input_data: dict) -> dict:
         float(input_data.get('bullying', 0))
     ]
 
-    features_array = np.array([features])
-
-    # Scale the features
-    scaled_features = scaler.transform(features_array)
+    # Pass as named DataFrame so scaler.transform() matches training-time column names
+    features_df = pd.DataFrame([features], columns=FEATURE_NAMES)
+    scaled_features = scaler.transform(features_df)
 
     # Predict
     prediction = model.predict(scaled_features)
-    
+
     # Try probabilities
     try:
         probabilities = model.predict_proba(scaled_features)
         confidence = float(np.max(probabilities[0]))
     except Exception:
-        confidence = 1.0 # Fallback if no proba method
+        confidence = 1.0  # Fallback if model has no predict_proba
 
     stress_level = int(prediction[0])
 
     # --- Real Feature Importance from XGBoost model ---
-    # Column names must match exactly the order used during model training
-    feature_names = [
-        'anxiety_level', 'self_esteem', 'mental_health_history', 'depression',
-        'headache', 'blood_pressure', 'sleep_quality', 'breathing_problem',
-        'noise_level', 'living_conditions', 'safety', 'basic_needs',
-        'academic_performance', 'study_load', 'teacher_student_relationship',
-        'future_career_concerns', 'social_support', 'peer_pressure',
-        'extracurricular_activities', 'bullying'
-    ]
-
     try:
         importances = model.feature_importances_
-        agg = {fname: float(imp) for fname, imp in zip(feature_names, importances)}
-        
-        # Normalize to sum = 1 and sort descending, keep top 6
+        agg = {fname: float(imp) for fname, imp in zip(FEATURE_NAMES, importances)}
+        # Normalize to sum = 1, sort descending, keep top 6
         total = sum(agg.values()) or 1.0
         sorted_items = sorted(agg.items(), key=lambda x: x[1], reverse=True)[:6]
         feature_importance = {k: round(v / total, 4) for k, v in sorted_items}
     except Exception:
         feature_importance = {
-            "academic_pressure": 0.40,
-            "sleep_hours": 0.30,
-            "financial_stress": 0.15,
-            "social_activity": 0.15
+            "anxiety_level": 0.25,
+            "depression": 0.20,
+            "sleep_quality": 0.20,
+            "study_load": 0.20,
+            "social_support": 0.15
         }
 
     return {

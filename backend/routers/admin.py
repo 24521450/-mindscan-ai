@@ -46,11 +46,16 @@ async def export_data(db: AsyncSession = Depends(get_db)):
     csv_file = StringIO()
     writer = csv.writer(csv_file)
     
-    # Write Headers
+    # Write Headers — must match current Response model columns exactly
     headers = [
-        "response_id", "session_id", "age", "gender", "cgpa", "sleep_hours", 
-        "study_hours", "social_activity", "physical_activity", "academic_pressure",
-        "financial_stress", "mental_health_history", "stress_level", "confidence_score"
+        "response_id", "session_id", "age", "gender",
+        "anxiety_level", "self_esteem", "mental_health_history", "depression",
+        "headache", "blood_pressure", "sleep_quality", "breathing_problem",
+        "noise_level", "living_conditions", "safety", "basic_needs",
+        "academic_performance", "study_load", "teacher_student_relationship",
+        "future_career_concerns", "social_support", "peer_pressure",
+        "extracurricular_activities", "bullying",
+        "stress_level", "confidence_score"
     ]
     writer.writerow(headers)
 
@@ -58,17 +63,29 @@ async def export_data(db: AsyncSession = Depends(get_db)):
     for r, p in records:
         writer.writerow([
             r.response_id,
-            r.session_id, # You can anonymize this column more if needed, e.g., hashing it
+            r.session_id,
             r.age,
             r.gender,
-            r.cgpa,
-            r.sleep_hours,
-            r.study_hours,
-            r.social_activity,
-            r.physical_activity,
-            r.academic_pressure,
-            r.financial_stress,
+            r.anxiety_level,
+            r.self_esteem,
             r.mental_health_history,
+            r.depression,
+            r.headache,
+            r.blood_pressure,
+            r.sleep_quality,
+            r.breathing_problem,
+            r.noise_level,
+            r.living_conditions,
+            r.safety,
+            r.basic_needs,
+            r.academic_performance,
+            r.study_load,
+            r.teacher_student_relationship,
+            r.future_career_concerns,
+            r.social_support,
+            r.peer_pressure,
+            r.extracurricular_activities,
+            r.bullying,
             p.stress_level if p else None,
             p.confidence_score if p else None
         ])
