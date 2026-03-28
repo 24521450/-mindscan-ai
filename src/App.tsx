@@ -822,14 +822,14 @@ export default function App() {
         <div className={`flex items-center justify-between w-full transition-all duration-500 ${
           isDarkMode 
             ? '' 
-            : 'bg-white/70 backdrop-blur-xl border border-white/80 shadow-[0_4px_24px_rgba(0,0,0,0.06)] rounded-full px-5 py-2'
+            : 'bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-full px-5 py-2'
         }`}>
           <div className="flex items-center gap-8">
             <div className={`text-xl font-bold tracking-tight cursor-pointer transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`} onClick={() => {setIsSurveyOpen(false); setIsCompleted(false); setCurrentStep(1);}}>{t('appName')}</div>
             {!isSurveyOpen && (
-              <nav className={`hidden md:flex items-center gap-6 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-slate-600'}`}>
-                <a href="#solutions" className={`transition-colors ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-slate-700 hover:text-blue-600'}`}>{t('nav.solutions')}</a>
-                <a href="#technology" className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-blue-600'}`}>{t('nav.technology')}</a>
+              <nav className={`hidden md:flex items-center gap-6 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-slate-800'}`}>
+                <a href="#solutions" className={`transition-colors ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-slate-900 hover:text-blue-700'}`}>{t('nav.solutions')}</a>
+                <a href="#technology" className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-blue-700'}`}>{t('nav.technology')}</a>
               </nav>
             )}
           </div>
@@ -1200,102 +1200,105 @@ export default function App() {
                   </div>
                 </>
               ) : (
-                /* ========== LIGHT MODE: left-aligned split layout ========== */
-                <div className="relative z-10 container mx-auto px-6 flex flex-col lg:flex-row items-center justify-between min-h-screen pt-28 pb-16 gap-8">
-                  {/* Left: Content */}
-                  <div className="flex-1 max-w-xl lg:max-w-[520px] text-left">
+                /* ========== LIGHT MODE: Glassmorphism overlap layout ========== */
+                <div className="relative z-10 container mx-auto px-6 flex flex-col justify-center min-h-screen pt-28 pb-16">
+                  
+                  {/* Background Globe - Absolute positioned to allow overlapping */}
+                  <div className="absolute top-1/2 right-[-20%] md:right-[-10%] lg:right-[0%] -translate-y-1/2 w-[600px] h-[600px] lg:w-[900px] lg:h-[900px] pointer-events-none z-0">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 1.5, ease: "easeOut" }}
+                      className="w-full h-full relative"
+                      style={{
+                        WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)',
+                        maskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)'
+                      }}
+                    >
+                      {/* Inner glow to make it look like pale frosted glass */}
+                      <div className="absolute inset-0 rounded-full" style={{
+                        background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 45%, transparent 75%)',
+                        zIndex: 10
+                      }} />
+                      <motion.div
+                        className="w-full h-full rounded-full"
+                        style={{
+                          backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/2/22/Earth_Western_Hemisphere_transparent_background.png)',
+                          backgroundSize: '100%',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat',
+                          /* Soft, bright, blurry globe filter */
+                          filter: 'brightness(1.8) contrast(0.85) grayscale(0.2) saturate(0.9) blur(1.5px) opacity(0.9)',
+                          mixBlendMode: 'luminosity'
+                        }}
+                        animate={{ rotate: earthRotation }}
+                        transition={{ duration: 2.66, ease: "easeInOut" }}
+                      />
+                      {/* Deep internal shadow to give 3D volume with very soft edges */}
+                      <div className="absolute inset-0 rounded-full shadow-[inset_-20px_-20px_80px_rgba(200,220,255,0.3),inset_30px_30px_80px_rgba(255,255,255,0.8)] z-20 pointer-events-none" />
+                    </motion.div>
+                  </div>
+
+                  {/* Foreground Content */}
+                  <div className="relative z-10 w-full max-w-2xl text-left">
                     {/* Badge */}
                     <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest mb-6 bg-white/70 border border-slate-200/80 text-slate-600 shadow-sm backdrop-blur-md uppercase"
+                      className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold tracking-widest mb-8 bg-white/40 border border-white/60 text-slate-700 shadow-sm backdrop-blur-xl uppercase"
                     >
                       {t('hero.badge')}
                     </motion.div>
 
                     {/* Headline */}
                     <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
-                      className="font-extrabold tracking-tight leading-[1.1] text-slate-900 mb-6"
-                      style={{ fontSize: 'clamp(2rem, 5vw, 3.75rem)' }}
+                      className="font-extrabold tracking-tight leading-[1.1] text-slate-900 mb-8 whitespace-nowrap"
+                      style={{ fontSize: 'clamp(2.5rem, 5.5vw, 4.5rem)' }}
                     >
-                      {t('hero.title1')}{' '}
-                      <span className="text-blue-600">{t('hero.title2')}</span>
+                      {t('hero.title1')}<br/>
+                      <span className="text-[#0f172a]">{t('hero.title2')}</span>
                     </motion.h1>
 
-                    {/* Subtitle — frosted glass card */}
+                    {/* Subtitle — highly blurred frosted glass card */}
                     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2 }}
-                      className="bg-white/60 backdrop-blur-md border border-white/80 rounded-2xl px-5 py-4 mb-8 shadow-sm"
+                      className="bg-white/20 backdrop-blur-3xl border border-white/60 rounded-3xl p-6 sm:p-8 mb-10 shadow-[0_8px_32px_rgba(255,255,255,0.3)] max-w-xl relative overflow-hidden"
                     >
-                      <p className="text-sm md:text-base leading-relaxed text-slate-600">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10" />
+                      <p className="relative z-10 text-base sm:text-lg leading-relaxed text-slate-800 font-medium">
                         {t('hero.subtitle')}
                       </p>
                     </motion.div>
 
-                    {/* CTA Buttons */}
+                    {/* CTA Buttons in a single subtle pill container layout */}
                     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}
-                      className="flex flex-wrap items-center gap-3 mb-8"
+                      className="inline-flex flex-wrap items-center gap-2 p-2 mb-10 bg-white/30 backdrop-blur-2xl border border-white/60 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
                     >
                       <button onClick={() => setIsSurveyOpen(true)}
-                        className="relative overflow-hidden group flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold bg-blue-600 text-white shadow-md hover:bg-blue-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                        className="relative overflow-hidden group flex items-center gap-2 px-8 py-3.5 rounded-full font-bold bg-[#1d70f5] text-white shadow-[0_4px_16px_rgba(29,112,245,0.4)] hover:shadow-[0_8px_24px_rgba(29,112,245,0.6)] transition-all duration-300"
                       >
                         <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-                        {t('hero.btnStart')} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        {t('hero.btnStart')} <ArrowRight className="w-[18px] h-[18px] group-hover:translate-x-1 transition-transform" />
                       </button>
                       <button onClick={() => setIsHowItWorksOpen(true)}
-                        className="flex items-center gap-2 px-7 py-3.5 rounded-full font-semibold bg-white/70 text-slate-700 border border-slate-200/80 hover:bg-white hover:-translate-y-1 shadow-sm transition-all duration-300 backdrop-blur-md"
+                        className="flex items-center gap-2 px-6 py-3.5 rounded-full font-bold text-slate-800 hover:bg-white/50 transition-all duration-300"
                       >
-                        <Play className="w-4 h-4 fill-current" />
+                        <Play className="w-[18px] h-[18px] fill-current" />
                         {t('hero.btnWatch')}
                       </button>
                     </motion.div>
 
                     {/* Trust badges */}
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.5 }}
-                      className="flex flex-wrap items-center gap-3"
+                      className="flex flex-wrap items-center gap-4"
                     >
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-slate-200/80 backdrop-blur-md shadow-sm">
-                        <ShieldCheck className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide" dangerouslySetInnerHTML={{ __html: t('hero.statsExpert') }} />
+                      <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/40 border border-white/60 backdrop-blur-xl shadow-sm text-slate-700">
+                        <ShieldCheck className="w-[16px] h-[16px] text-slate-700" />
+                        <span className="text-xs font-bold uppercase tracking-wide" dangerouslySetInnerHTML={{ __html: t('hero.statsExpert') }} />
                       </div>
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-slate-200/80 backdrop-blur-md shadow-sm">
-                        <Lock className="w-4 h-4 text-blue-600" />
-                        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('hero.statsAnon')}</span>
+                      <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/40 border border-white/60 backdrop-blur-xl shadow-sm text-slate-700">
+                        <Lock className="w-[16px] h-[16px] text-slate-700" />
+                        <span className="text-xs font-bold uppercase tracking-wide">{t('hero.statsAnon')}</span>
                       </div>
                     </motion.div>
                   </div>
-
-                  {/* Right: Globe */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.85, x: 60 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    transition={{ duration: 1.4, ease: "easeOut" }}
-                    className="flex-1 flex items-center justify-center lg:justify-end relative pointer-events-none"
-                    style={{ maxWidth: '580px', minWidth: '300px' }}
-                  >
-                    {/* Globe circle — tightly cropped to eliminate black space */}
-                    <div className="relative rounded-full overflow-hidden shadow-[0_20px_60px_rgba(99,102,241,0.2),0_0_0_1px_rgba(255,255,255,0.5)]"
-                      style={{ width: '100%', maxWidth: '500px', aspectRatio: '1/1', background: 'transparent' }}
-                    >
-                      <motion.div
-                        className="w-full h-full"
-                        style={{
-                          backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/2/22/Earth_Western_Hemisphere_transparent_background.png)',
-                          backgroundSize: '110%',
-                          backgroundPosition: 'center center',
-                          backgroundRepeat: 'no-repeat',
-                          filter: 'brightness(0.95) contrast(1.1) saturate(1.1)',
-                        }}
-                        animate={{ rotate: earthRotation }}
-                        transition={{ duration: 2.66, ease: "easeInOut" }}
-                      />
-                      {/* Inner atmosphere glow */}
-                      <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                        boxShadow: 'inset 0 0 40px rgba(255,255,255,0.4), inset 20px 0 60px rgba(147,197,253,0.3)'
-                      }} />
-                    </div>
-                    {/* Outer glow ring to blend with aurora */}
-                    <div className="absolute inset-0 rounded-full pointer-events-none" style={{
-                      background: 'radial-gradient(circle at 50% 50%, transparent 48%, rgba(255,255,255,0.3) 65%, transparent 80%)',
-                    }} />
-                  </motion.div>
                 </div>
               )}
             </section>
