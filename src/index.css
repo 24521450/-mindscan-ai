@@ -20,8 +20,43 @@
   100% { transform: translateX(100%); }
 }
 
-.animate-blob    { animation: blob 7s infinite; }
-.animate-shimmer { animation: shimmer 2s infinite; }
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
+  50%       { box-shadow: 0 0 20px 8px rgba(59,130,246,0.15); }
+}
+
+@keyframes earth-rotate {
+  from { background-position: 0% center; }
+  to   { background-position: 200% center; }
+}
+
+.animate-blob          { animation: blob 7s infinite; }
+.animate-shimmer       { animation: shimmer 2s infinite; }
+.animate-earth         { animation: earth-rotate 30s linear infinite; }
+.animate-float         { animation: float 6s ease-in-out infinite; }
+.animate-gradient-shift { animation: gradient-shift 8s ease infinite; background-size: 200% 200%; }
+.animate-pulse-glow    { animation: pulse-glow 3s ease-in-out infinite; }
 
 .animation-delay-2000 { animation-delay: 2s; }
 .animation-delay-4000 { animation-delay: 4s; }
+
+/* Custom scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.4); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.7); }
+
+.dark ::-webkit-scrollbar-thumb { background: rgba(71,85,105,0.5); }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.8); }
+
