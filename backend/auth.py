@@ -4,7 +4,16 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super_secret_mindscan_key_123")
+# Fail-fast security check: ensure JWT_SECRET_KEY is set at module load time
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError(
+        "CRITICAL: JWT_SECRET_KEY environment variable is not set. "
+        "This is a required security credential. "
+        "Set it in backend/.env or environment before starting the application. "
+        "Example: JWT_SECRET_KEY=$(openssl rand -hex 32)"
+    )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

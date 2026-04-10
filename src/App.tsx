@@ -99,7 +99,7 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
           />
         </svg>
       </div>
-      <div className="text-center -mt-2">
+      <div className="text-center mt-1">
         <div
           className="text-4xl font-black leading-tight"
           style={{ color: levelColor, fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
@@ -228,11 +228,13 @@ export default function App() {
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
   const [showAllRecs, setShowAllRecs] = useState(false);
+  const [showFullHistory, setShowFullHistory] = useState(false);
   const [stepError, setStepError] = useState<string>('');
   const [earthRotation, setEarthRotation] = useState(0);
   const [activeDataModule, setActiveDataModule] = useState<'dashboard' | 'analytics'>('dashboard');
   const [stressTrendPeriod, setStressTrendPeriod] = useState<'weekly' | 'monthly'>('weekly');
   const [radarAnimated, setRadarAnimated] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const radarRef = useRef<HTMLDivElement>(null);
   const languageMenuRef = useRef<HTMLDivElement>(null);
 
@@ -1590,29 +1592,16 @@ export default function App() {
             </div>
 
             {isSurveyOpen && isCompleted && aiResult && (
-              <div className="hidden lg:flex items-center gap-3 shrink-0 mx-6">
-                <div className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                  {t('ui.dataModule')}
-                </div>
-                <div className="relative group">
-                  <select
-                    value={activeDataModule}
-                    onChange={(e) => setActiveDataModule(e.target.value as 'dashboard' | 'analytics')}
-                    className={`appearance-none pl-4 pr-10 py-2 rounded-full text-sm font-semibold border backdrop-blur-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-400/40 ${isDarkMode
-                        ? 'bg-white/10 text-slate-100 border-white/15 hover:bg-white/15 shadow-[0_8px_24px_rgba(2,6,23,0.35),inset_0_1px_1px_rgba(255,255,255,0.12)]'
-                        : 'bg-white/55 text-slate-700 border-white/70 hover:bg-white/70 shadow-[0_8px_24px_rgba(15,23,42,0.08),inset_0_1px_1px_rgba(255,255,255,0.9)]'
-                      }`}
-                    style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                  >
-                    <option value="dashboard">{t('ui.module.dashboard')}</option>
-                    <option value="analytics">{t('ui.module.analytics')}</option>
-                  </select>
-                  <ChevronDown
-                    className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${isDarkMode ? 'text-slate-300 group-hover:text-slate-100' : 'text-slate-500 group-hover:text-slate-700'
-                      }`}
-                  />
-                </div>
+              <div className="flex lg:hidden items-center gap-3 shrink-0">
+                <button
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-white/40 text-slate-700'}`}
+                  aria-label={t('ui.menu')}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isSidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                  </svg>
+                </button>
               </div>
             )}
 
@@ -2262,7 +2251,7 @@ export default function App() {
             key="survey"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-24 pb-12 max-w-[1360px]' : 'items-center justify-center py-24 max-w-3xl'}`}
+            className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-20 pb-12 lg:pt-24 max-w-full' : 'items-center justify-center py-24 max-w-3xl'}`}
           >
             {!isCompleted ? (
               <div className={`relative rounded-[2rem] overflow-hidden p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
@@ -2332,14 +2321,130 @@ export default function App() {
                     <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{t('survey.analyzingDesc')}</p>
                   </div>
                 ) : aiResult ? (
-                  <div className="text-left w-full max-w-[1320px] mx-auto analytics-liquid-bg rounded-[2.5rem] p-4 md:p-6">
-                    <section className={`rounded-[2.75rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : ''} lg:min-h-[640px]`}>
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
-                        <div className="lg:col-span-12 flex flex-col gap-8">
-                          {activeDataModule === 'analytics' ? (
-                            renderDashboardView()
-                          ) : (
-                            <><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-0">
+                    {/* Sidebar Navigation */}
+                    <motion.div
+                      initial={{ x: -300, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ duration: 0.4 }}
+                      className={`fixed lg:static inset-y-0 left-0 w-72 lg:w-64 h-full lg:h-auto bg-gradient-to-b ${isDarkMode ? 'from-slate-900/95 to-slate-900/80' : 'from-white/80 to-blue-50/60'} backdrop-blur-xl border-r ${isDarkMode ? 'border-white/10' : 'border-white/40'} z-40 lg:z-0 lg:rounded-2xl lg:m-2 lg:sticky lg:top-0 overflow-y-auto lg:overflow-y-visible shadow-2xl lg:shadow-lg transition-all duration-500 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                    >
+                      <div className="p-6 space-y-8 h-full flex flex-col">
+                        {/* Sidebar Header */}
+                        <div className="flex items-center justify-between lg:justify-start">
+                          <h3 className={`text-lg font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+                            style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+                            {t('ui.modules')}
+                          </h3>
+                          <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={`lg:hidden p-1.5 rounded-lg transition-colors ${isDarkMode ? 'hover:bg-white/10 text-slate-400' : 'hover:bg-white/40 text-slate-600'}`}
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Module Selector */}
+                        <div className="space-y-3">
+                          <label className={`text-[11px] font-black uppercase tracking-[0.25em] block ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                            style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                            {t('ui.dataModule')}
+                          </label>
+                          <div className="space-y-2">
+                            {[
+                              { value: 'dashboard' as const, label: t('ui.module.dashboard'), icon: LayoutDashboard },
+                              { value: 'analytics' as const, label: t('ui.module.analytics'), icon: BarChart2 }
+                            ].map((module) => {
+                              const Icon = module.icon;
+                              const isActive = activeDataModule === module.value;
+                              return (
+                                <button
+                                  key={module.value}
+                                  onClick={() => {
+                                    setActiveDataModule(module.value);
+                                    setIsSidebarOpen(false);
+                                  }}
+                                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${isActive
+                                      ? isDarkMode
+                                        ? 'bg-gradient-to-r from-teal-500/30 to-teal-500/10 text-teal-100 border border-teal-500/40 shadow-lg shadow-teal-500/20'
+                                        : 'bg-gradient-to-r from-teal-600/20 to-teal-600/5 text-teal-700 border border-teal-600/30 shadow-lg shadow-teal-600/10'
+                                      : isDarkMode
+                                        ? 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent hover:border-white/10'
+                                        : 'text-slate-600 hover:bg-white/40 hover:text-slate-900 border border-transparent hover:border-white/40'
+                                    }`}
+                                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                                >
+                                  <Icon className="w-5 h-5" />
+                                  <span>{module.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Period Selector (for analytics) */}
+                        {activeDataModule === 'analytics' && (
+                          <div className="space-y-3 pt-4 border-t border-white/10">
+                            <label className={`text-[11px] font-black uppercase tracking-[0.25em] block ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                              {t('ui.dashboard.period')}
+                            </label>
+                            <div className="space-y-2">
+                              {[
+                                { value: 'weekly' as const, label: t('ui.dashboard.weekly'), icon: Calendar },
+                                { value: 'monthly' as const, label: t('ui.dashboard.monthly'), icon: Calendar }
+                              ].map((period) => (
+                                <button
+                                  key={period.value}
+                                  onClick={() => setStressTrendPeriod(period.value)}
+                                  className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${stressTrendPeriod === period.value
+                                      ? isDarkMode
+                                        ? 'bg-purple-500/30 text-purple-100 border border-purple-500/40'
+                                        : 'bg-purple-600/20 text-purple-700 border border-purple-600/30'
+                                      : isDarkMode
+                                        ? 'text-slate-400 hover:bg-white/5'
+                                        : 'text-slate-600 hover:bg-white/40'
+                                    }`}
+                                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                                >
+                                  <Calendar className="w-4 h-4" />
+                                  <span>{period.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Spacer for mobile, sticky footer for desktop */}
+                        <div className="flex-1" />
+                      </div>
+                    </motion.div>
+
+                    {/* Mobile overlay */}
+                    <AnimatePresence>
+                      {isSidebarOpen && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+                        />
+                      )}
+                    </AnimatePresence>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 w-full lg:overflow-y-auto">
+                      <div className="text-left w-full analytics-liquid-bg rounded-2xl lg:rounded-[2.5rem] p-4 md:p-6 lg:p-0">
+                        <section className={`rounded-2xl lg:rounded-[2.75rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : ''} lg:min-h-[640px]`}>
+                          <div className="grid grid-cols-1 gap-8 h-full">
+                            <div className="flex flex-col gap-8">
+                              {activeDataModule === 'analytics' ? (
+                                renderDashboardView()
+                              ) : (
+                                <><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                               <div>
                                 <h2 className={`text-3xl lg:text-4xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
                                   style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.resultsPanel.title')}</h2>
@@ -2365,10 +2470,10 @@ export default function App() {
                                     <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
                                       }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.live')}</span>
                                   </div>
-                                  <div className="flex flex-col items-center justify-center py-2">
+                                  <div className="flex flex-col items-center justify-center py-4">
                                     <GaugeChart level={aiResult.stress_level} confidence={aiResult.confidence_score} t={t} isDarkMode={isDarkMode} />
                                   </div>
-                                  <div className="mt-4 pt-4 grid grid-cols-3 gap-2" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
+                                  <div className="mt-4 pt-4 grid grid-cols-3 gap-4" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
                                     <div className="text-center">
                                       <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.status.title')}</div>
@@ -2478,12 +2583,16 @@ export default function App() {
                                       <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.anonymousHistoryDesc')}</p>
                                     </div>
-                                    <button className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline`}
-                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" /></button>
+                                    <button
+                                      onClick={() => setShowFullHistory(prev => !prev)}
+                                      className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline transition-opacity`}
+                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                                      {showFullHistory ? t('ui.showLess') : t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" />
+                                    </button>
                                   </div>
                                   <div className={`p-5 rounded-[2rem] border ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/25 backdrop-blur-3xl border-white/40'}`}>
                                     <div className="space-y-3">
-                                      {sessionHistory.slice(0, 5).map((session, idx) => {
+                                      {(showFullHistory ? sessionHistory : sessionHistory.slice(0, 5)).map((session, idx) => {
                                         const score = session.level === 'High' ? '8.1' : session.level === 'Medium' ? '6.2' : '4.8';
                                         return (
                                           <div key={`history-${session.date}-${idx}`}
@@ -2563,11 +2672,9 @@ export default function App() {
                               </section>
                             </>
                           )}
-
-                        </div>
+                        </section>
                       </div>
-                    </section>
-
+                    </div>
 
                     <div className="mt-12 pt-8 border-t border-gray-100/20 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
                       <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>{t('results.disclaimer')}</p>
@@ -2591,7 +2698,6 @@ export default function App() {
                         {t('results.btnHome')}
                       </button>
                     </div>
-
                   </div>
                 ) : (
                   <div className="text-center py-12">

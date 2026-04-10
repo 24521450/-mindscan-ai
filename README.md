@@ -15,6 +15,7 @@
   - [1. Khởi động Backend (FastAPI)](#1-khởi-động-backend-fastapi)
   - [2. Khởi động Frontend (React/Vite)](#2-khởi-động-frontend-reactvite)
 - [API Endpoints](#api-endpoints)
+- [Database Migrations (Alembic)](#database-migrations-alembic)
 - [Biến môi trường](#biến-môi-trường)
 - [Chi tiết mô hình AI](#chi-tiết-mô-hình-ai)
 - [Xử lý sự cố](#xử-lý-sự-cố)
@@ -153,7 +154,24 @@ DATABASE_URL=sqlite+aiosqlite:///./mindscan_ai.db
 JWT_SECRET_KEY=your-super-secret-key-here
 ```
 
-**Bước 4 — Khởi động server Uvicorn:**
+**Bước 4 — Khởi chạy Database Migrations (Alembic):**
+
+Trước khi khởi động server, bạn cần áp dụng các migration để tạo cơ sở dữ liệu:
+
+```bash
+# Áp dụng tất cả pending migrations
+alembic upgrade head
+```
+
+Lệnh này sẽ tạo tất cả các bảng cần thiết (sessions, responses, predictions, recommendations) từ các model SQLAlchemy, được quản lý qua Alembic migrations.
+
+> **Lưu ý:** Trong lần chạy đầu tiên, nếu chưa có migration, bạn cần tạo bằng:
+> ```bash
+> alembic revision --autogenerate -m "Initial schema"
+> alembic upgrade head
+> ```
+
+**Bước 5 — Khởi động server Uvicorn:**
 
 ```bash
 uvicorn backend.main:app --port 8080 --reload
@@ -218,6 +236,66 @@ Tất cả các endpoint admin yêu cầu header `Bearer <token>`.
 | `GET`  | `/api/admin/export`  | Xuất toàn bộ dữ liệu dưới dạng file CSV                    |
 
 > Tài liệu tương tác đầy đủ có tại **[http://localhost:8080/docs](http://localhost:8080/docs)** khi server đang chạy.
+
+---
+
+## Database Migrations (Alembic)
+
+MindScan AI sử dụng **Alembic** để quản lý schema migration cơ sở dữ liệu, đảm bảo version control và tính nhất quán khi nâng cấp dự án.
+
+### Khởi tạo Alembic (lần đầu khi chưa có migrations)
+
+```bash
+# Cài đặt alembic (nếu chưa cài)
+pip install alembic
+
+# Khởi tạo folder alembic
+alembic init alembic
+```
+
+### Tạo Migration đầu tiên
+
+```bash
+# Auto-generate migration từ models
+alembic revision --autogenerate -m "Initial schema"
+
+# Kiểm tra file migration tạo ra trong alembic/versions/
+# Đảm bảo các table (sessions, responses, predictions, recommendations) đều có mặt
+```
+
+### Áp dụng Migrations
+
+```bash
+# Áp dụng tất cả pending migrations
+alembic upgrade head
+
+# Kiểm tra migration history
+alembic current
+alembic history --verbose
+```
+
+### Rollback Migrations (khi cần)
+
+```bash
+# Rollback về version trước đó
+alembic downgrade -1
+
+# Rollback về version cụ thế
+alembic downgrade <revision_id>
+```
+
+### Quy trình khi thêm Model mới
+
+1. **Thêm model vào** `backend/models.py`
+2. **Tạo migration:**
+   ```bash
+   alembic revision --autogenerate -m "Add new_table structure"
+   ```
+3. **Kiểm tra file** `alembic/versions/<revision_id>.py` có chính xác không
+4. **Áp dụng migration:**
+   ```bash
+   alembic upgrade head
+   ```
 
 ---
 

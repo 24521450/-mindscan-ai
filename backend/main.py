@@ -8,7 +8,6 @@ dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
 from backend.routers import user, admin
-from backend.database import engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,12 +16,8 @@ async def lifespan(app: FastAPI):
     from backend.services.ml_service import get_model_and_scaler
     # Attempt to preload ML models at startup to catch errors early
     get_model_and_scaler()
+    print("ML models preloaded successfully.")
     
-    # Create DB tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        print("Database tables ensured.")
-        
     yield
     # Shutdown: Clean up resources
     print("Backend shutting down")
