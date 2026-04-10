@@ -2598,10 +2598,11 @@ export default function App() {
                     <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{t('survey.analyzingDesc')}</p>
                   </div>
                 ) : aiResult ? (
-                  <div className="text-left w-full max-w-[1480px] mx-auto analytics-liquid-bg rounded-[2.5rem] p-4 md:p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
-                      <aside className="hidden lg:block lg:col-span-2">
-                        <div className={`analytics-glass-card rounded-[1.75rem] p-4 sticky top-24 ${isDarkMode ? 'dark' : ''}`}>
+                  <div className="text-left w-full max-w-[1600px] mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 lg:gap-8 items-start">
+                      <aside className="hidden lg:block">
+                        <div className="sticky top-24">
+                          <div className={`analytics-glass-card rounded-[1.75rem] p-4 ${isDarkMode ? 'dark' : ''}`}>
                           <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                             style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
                             {t('ui.dataModule')}
@@ -2625,9 +2626,10 @@ export default function App() {
                             />
                           </div>
                         </div>
+                        </div>
                       </aside>
 
-                      <div className="lg:col-span-10">
+                      <div className="analytics-liquid-bg rounded-[2.5rem] p-4 md:p-6">
                         <div className="lg:hidden mb-4">
                           <div className={`analytics-glass-card rounded-[1.5rem] p-4 ${isDarkMode ? 'dark' : ''}`}>
                             <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}

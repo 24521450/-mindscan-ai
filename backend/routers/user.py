@@ -27,79 +27,75 @@ async def create_session(
 
 @router.post("/predict", response_model=SurveySubmissionResponse)
 async def submit_survey_and_predict(session_id: str, survey: SurveyInput, db: AsyncSession = Depends(get_db)):
+    # 1. Get predictions from ML service first (no DB writes yet)
     try:
-        # 1. Verify session exists
-        result = await db.execute(select(Session).filter(Session.session_id == session_id))
-        db_session = result.scalars().first()
-        if not db_session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        ml_result = predict_stress(survey.model_dump())
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
-        # 2. Get predictions from ML service
-        try:
-            ml_result = predict_stress(survey.model_dump())
-        except RuntimeError as e:
-            raise HTTPException(status_code=503, detail=str(e))  # Service Unavailable if ML errors
+    stress_level = ml_result["stress_level"]
+    confidence_score = ml_result["confidence_score"]
+    model_version = ml_result.get("model_version", "v1.0.0-legacy")
+    rec_data = generate_recommendations(survey.model_dump(), stress_level)
 
-        stress_level = ml_result["stress_level"]
-        confidence_score = ml_result["confidence_score"]
-        model_version = ml_result.get("model_version", "v1.0.0-legacy")
+    try:
+        # 2. Verify session + all DB writes happen in one transaction block.
+        async with db.begin():
+            result = await db.execute(select(Session).filter(Session.session_id == session_id))
+            db_session = result.scalars().first()
+            if not db_session:
+                raise HTTPException(status_code=404, detail="Session not found")
 
-        # 3. Create DB records (single atomic unit)
-        new_response = Response(
-            session_id=session_id,
-            age=survey.age,
-            gender=survey.gender,
-            anxiety_level=survey.anxiety_level,
-            depression=survey.depression,
-            self_esteem=survey.self_esteem,
-            mental_health_history=survey.mental_health_history,
-            blood_pressure=survey.blood_pressure,
-            sleep_quality=survey.sleep_quality,
-            headache=survey.headache,
-            breathing_problem=survey.breathing_problem,
-            study_load=survey.study_load,
-            academic_performance=survey.academic_performance,
-            teacher_student_relationship=survey.teacher_student_relationship,
-            future_career_concerns=survey.future_career_concerns,
-            social_support=survey.social_support,
-            peer_pressure=survey.peer_pressure,
-            extracurricular_activities=survey.extracurricular_activities,
-            bullying=survey.bullying,
-            noise_level=survey.noise_level,
-            living_conditions=survey.living_conditions,
-            safety=survey.safety,
-            basic_needs=survey.basic_needs
-        )
-        db.add(new_response)
-        await db.flush()  # flush to get response_id
-
-        prediction = Prediction(
-            response_id=new_response.response_id,
-            stress_level=stress_level,
-            confidence_score=confidence_score,
-            model_version=model_version
-        )
-        db.add(prediction)
-        await db.flush()  # flush to get pred_id
-
-        # 4. Generate and store recommendations in the same transaction
-        rec_data = generate_recommendations(survey.model_dump(), stress_level)
-        rec_objects = []
-
-        for r in rec_data:
-            reco = Recommendation(
-                pred_id=prediction.pred_id,
-                category=r["category"],
-                title=r["title"],
-                description=r["description"]
+            new_response = Response(
+                session_id=session_id,
+                age=survey.age,
+                gender=survey.gender,
+                anxiety_level=survey.anxiety_level,
+                depression=survey.depression,
+                self_esteem=survey.self_esteem,
+                mental_health_history=survey.mental_health_history,
+                blood_pressure=survey.blood_pressure,
+                sleep_quality=survey.sleep_quality,
+                headache=survey.headache,
+                breathing_problem=survey.breathing_problem,
+                study_load=survey.study_load,
+                academic_performance=survey.academic_performance,
+                teacher_student_relationship=survey.teacher_student_relationship,
+                future_career_concerns=survey.future_career_concerns,
+                social_support=survey.social_support,
+                peer_pressure=survey.peer_pressure,
+                extracurricular_activities=survey.extracurricular_activities,
+                bullying=survey.bullying,
+                noise_level=survey.noise_level,
+                living_conditions=survey.living_conditions,
+                safety=survey.safety,
+                basic_needs=survey.basic_needs
             )
-            db.add(reco)
-            rec_objects.append(reco)
+            db.add(new_response)
+            await db.flush()
 
-        # 5. Commit only when all operations succeed
-        await db.commit()
+            prediction = Prediction(
+                response_id=new_response.response_id,
+                stress_level=stress_level,
+                confidence_score=confidence_score,
+                model_version=model_version
+            )
+            db.add(prediction)
+            await db.flush()
 
-        await db.refresh(prediction)
+            rec_objects = []
+            for r in rec_data:
+                reco = Recommendation(
+                    pred_id=prediction.pred_id,
+                    category=r["category"],
+                    title=r["title"],
+                    description=r["description"]
+                )
+                db.add(reco)
+                rec_objects.append(reco)
+
+            # Ensure recommendation IDs are generated before response serialization.
+            await db.flush()
 
         return {
             "session_id": session_id,
@@ -114,10 +110,8 @@ async def submit_survey_and_predict(session_id: str, survey: SurveyInput, db: As
             }
         }
     except HTTPException:
-        await db.rollback()
         raise
     except Exception as e:
-        await db.rollback()
         raise HTTPException(status_code=500, detail=f"Predict transaction failed: {str(e)}")
 
 
