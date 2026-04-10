@@ -4,6 +4,7 @@ from datetime import datetime
 
 class SessionResponse(BaseModel):
     session_id: str
+    user_id: Optional[int] = None
     created_at: datetime
     
     class Config:
@@ -52,6 +53,7 @@ class PredictionResponse(BaseModel):
     pred_id: int
     stress_level: int
     confidence_score: float
+    model_version: str
     feature_importance: Optional[Dict[str, float]] = None
     feature_contributions: Optional[List[FeatureContribution]] = None
     recommendations: Optional[List[RecommendationResponse]] = []
@@ -75,3 +77,36 @@ class AdminStatsResponse(BaseModel):
     total_sessions: int
     total_predictions: int
     high_stress_rate: float
+
+
+class RegisterRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+    name: str = Field(..., min_length=1, max_length=120)
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=8, max_length=128)
+
+
+class AuthTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in_seconds: int
+
+
+class MeResponse(BaseModel):
+    user_id: int
+    email: str
+    name: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserHistoryPredictionResponse(BaseModel):
+    session_id: str
+    created_at: datetime
+    prediction: PredictionResponse

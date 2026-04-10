@@ -1,0 +1,88 @@
+{
+  "cases": [
+    {
+      "id": "baseline_medium",
+      "description": "Balanced baseline profile for quick regression checks",
+      "input": {
+        "age": 20,
+        "gender": "male",
+        "anxiety_level": 5,
+        "depression": 5,
+        "self_esteem": 15,
+        "mental_health_history": 0,
+        "blood_pressure": 2,
+        "sleep_quality": 3,
+        "headache": 0,
+        "breathing_problem": 0,
+        "study_load": 3,
+        "academic_performance": 3,
+        "teacher_student_relationship": 3,
+        "future_career_concerns": 3,
+        "social_support": 1,
+        "peer_pressure": 0,
+        "extracurricular_activities": 2,
+        "bullying": 0,
+        "noise_level": 0,
+        "living_conditions": 3,
+        "safety": 3,
+        "basic_needs": 3
+      }
+    },
+    {
+      "id": "high_stress",
+      "description": "Higher-risk profile to validate top-end stress predictions",
+      "input": {
+        "age": 20,
+        "gender": "male",
+        "anxiety_level": 14,
+        "depression": 12,
+        "self_esteem": 10,
+        "mental_health_history": 0,
+        "blood_pressure": 2,
+        "sleep_quality": 1.5,
+        "headache": 3,
+        "breathing_problem": 2,
+        "study_load": 4,
+        "academic_performance": 2,
+        "teacher_student_relationship": 3,
+        "future_career_concerns": 4,
+        "social_support": 1,
+        "peer_pressure": 3,
+        "extracurricular_activities": 2,
+        "bullying": 1,
+        "noise_level": 3,
+        "living_conditions": 2,
+        "safety": 3,
+        "basic_needs": 2
+      }
+    },
+    {
+      "id": "low_stress",
+      "description": "Low-risk profile to validate lower stress bucket behavior",
+      "input": {
+        "age": 22,
+        "gender": "female",
+        "anxiety_level": 3,
+        "depression": 2,
+        "self_esteem": 25,
+        "mental_health_history": 0,
+        "blood_pressure": 1,
+        "sleep_quality": 4,
+        "headache": 1,
+        "breathing_problem": 1,
+        "study_load": 2,
+        "academic_performance": 4,
+        "teacher_student_relationship": 4,
+        "future_career_concerns": 2,
+        "social_support": 3,
+        "peer_pressure": 1,
+        "extracurricular_activities": 4,
+        "bullying": 0,
+        "noise_level": 2,
+        "living_conditions": 4,
+        "safety": 4,
+        "basic_needs": 4
+      }
+    }
+  ]
+}

@@ -4,8 +4,11 @@ import numpy as np
 import pandas as pd
 import logging
 import xgboost as xgb
+from copy import deepcopy
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
+CURRENT_MODEL_VERSION = "v1.1.0-xgb"
 
 # Assume the artifacts are placed in the backend root or project root. You can adjust paths later.
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -38,37 +41,14 @@ FEATURE_NAMES = [
     'extracurricular_activities', 'bullying'
 ]
 
-def predict_stress(input_data: dict) -> dict:
+@lru_cache(maxsize=512)
+def _predict_from_features_tuple(features_tuple: tuple[float, ...]) -> dict:
     model, scaler = get_model_and_scaler()
     if not model or not scaler:
         raise RuntimeError("Model or Scaler not loaded. Please make sure the .pkl files exist.")
 
-    # Build feature values in the exact same order as FEATURE_NAMES
-    features = [
-        float(input_data.get('anxiety_level', 0)),
-        float(input_data.get('self_esteem', 0)),
-        float(input_data.get('mental_health_history', 0)),
-        float(input_data.get('depression', 0)),
-        float(input_data.get('headache', 0)),
-        float(input_data.get('blood_pressure', 1)),
-        float(input_data.get('sleep_quality', 0)),
-        float(input_data.get('breathing_problem', 0)),
-        float(input_data.get('noise_level', 0)),
-        float(input_data.get('living_conditions', 0)),
-        float(input_data.get('safety', 0)),
-        float(input_data.get('basic_needs', 0)),
-        float(input_data.get('academic_performance', 0)),
-        float(input_data.get('study_load', 0)),
-        float(input_data.get('teacher_student_relationship', 0)),
-        float(input_data.get('future_career_concerns', 0)),
-        float(input_data.get('social_support', 0)),
-        float(input_data.get('peer_pressure', 0)),
-        float(input_data.get('extracurricular_activities', 0)),
-        float(input_data.get('bullying', 0))
-    ]
-
     # Pass as named DataFrame so scaler.transform() matches training-time column names
-    features_df = pd.DataFrame([features], columns=FEATURE_NAMES)
+    features_df = pd.DataFrame([list(features_tuple)], columns=FEATURE_NAMES)
     scaled_features = scaler.transform(features_df)
 
     prediction = model.predict(scaled_features)
@@ -117,6 +97,35 @@ def predict_stress(input_data: dict) -> dict:
     return {
         "stress_level": stress_level,
         "confidence_score": confidence,
+        "model_version": CURRENT_MODEL_VERSION,
         "feature_importance": feature_importance,
         "feature_contributions": feature_contributions
     }
+
+
+def predict_stress(input_data: dict) -> dict:
+    # Build feature values in the exact same order as FEATURE_NAMES
+    features_tuple = (
+        float(input_data.get('anxiety_level', 0)),
+        float(input_data.get('self_esteem', 0)),
+        float(input_data.get('mental_health_history', 0)),
+        float(input_data.get('depression', 0)),
+        float(input_data.get('headache', 0)),
+        float(input_data.get('blood_pressure', 1)),
+        float(input_data.get('sleep_quality', 0)),
+        float(input_data.get('breathing_problem', 0)),
+        float(input_data.get('noise_level', 0)),
+        float(input_data.get('living_conditions', 0)),
+        float(input_data.get('safety', 0)),
+        float(input_data.get('basic_needs', 0)),
+        float(input_data.get('academic_performance', 0)),
+        float(input_data.get('study_load', 0)),
+        float(input_data.get('teacher_student_relationship', 0)),
+        float(input_data.get('future_career_concerns', 0)),
+        float(input_data.get('social_support', 0)),
+        float(input_data.get('peer_pressure', 0)),
+        float(input_data.get('extracurricular_activities', 0)),
+        float(input_data.get('bullying', 0))
+    )
+    # Return a defensive copy because callers may alter response fields.
+    return deepcopy(_predict_from_features_tuple(features_tuple))

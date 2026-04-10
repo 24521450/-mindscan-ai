@@ -7,22 +7,24 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
-from backend.routers import user, admin
-from backend.database import engine, Base
+from backend.routers import user, admin, auth
+
+
+def validate_required_env() -> None:
+    jwt_secret = os.getenv("JWT_SECRET_KEY", "").strip()
+    if not jwt_secret:
+        raise ValueError("JWT_SECRET_KEY environment variable is not set.")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_required_env()
     # Startup: Load ML models or connect to DB here if needed
     print("Backend started")
     from backend.services.ml_service import get_model_and_scaler
     # Attempt to preload ML models at startup to catch errors early
     get_model_and_scaler()
     
-    # Create DB tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        print("Database tables ensured.")
-        
     yield
     # Shutdown: Clean up resources
     print("Backend shutting down")
@@ -47,6 +49,7 @@ app.add_middleware(
 
 app.include_router(user.router)
 app.include_router(admin.router)
+app.include_router(auth.router)
 
 @app.get("/")
 def read_root():

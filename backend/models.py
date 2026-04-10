@@ -9,9 +9,23 @@ class Session(Base):
     __tablename__ = "sessions"
 
     session_id = Column(CHAR(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+    user = relationship("User", back_populates="sessions")
     responses = relationship("Response", back_populates="session", cascade="all, delete-orphan")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    email = Column(String(255), nullable=False, unique=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    name = Column(String(120), nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    sessions = relationship("Session", back_populates="user")
 
 
 class Response(Base):
@@ -56,6 +70,7 @@ class Prediction(Base):
     
     stress_level = Column(Integer) # 0: Low, 1: Medium, 2: High
     confidence_score = Column(Float)
+    model_version = Column(String(64), nullable=False, default="v1.0.0-legacy")
     
     response = relationship("Response", back_populates="prediction")
     recommendations = relationship("Recommendation", back_populates="prediction", cascade="all, delete-orphan")

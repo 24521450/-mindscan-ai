@@ -18,6 +18,17 @@ export interface AIRecommendation {
 }
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080';
+const API_TIMEOUT_MS = 15000;
+
+async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 // Multilingual feature labels
 const featureLabels: Record<string, Record<'vi' | 'en' | 'de' | 'zh' | 'fr', string>> = {
@@ -79,7 +90,7 @@ export async function analyzeSurveyData(data: any, language: 'vi' | 'en' | 'de' 
   let sessionId = localStorage.getItem('mindscan_session_id');
   if (!sessionId) {
     try {
-      const sessRes = await fetch(`${API_BASE}/api/session`, { method: 'POST' });
+      const sessRes = await fetchWithTimeout(`${API_BASE}/api/session`, { method: 'POST' });
       const sessJson = await sessRes.json();
       sessionId = sessJson.session_id;
       localStorage.setItem('mindscan_session_id', sessionId!);
@@ -133,7 +144,7 @@ export async function analyzeSurveyData(data: any, language: 'vi' | 'en' | 'de' 
 
   // 3. Call prediction API
   try {
-    let res = await fetch(`${API_BASE}/api/predict?session_id=${sessionId}`, {
+    let res = await fetchWithTimeout(`${API_BASE}/api/predict?session_id=${sessionId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -141,12 +152,12 @@ export async function analyzeSurveyData(data: any, language: 'vi' | 'en' | 'de' 
 
     if (res.status === 404) {
       console.warn("Session 404. Refreshing session and retrying...");
-      const sessRes = await fetch(`${API_BASE}/api/session`, { method: 'POST' });
+      const sessRes = await fetchWithTimeout(`${API_BASE}/api/session`, { method: 'POST' });
       const sessJson = await sessRes.json();
       sessionId = sessJson.session_id;
       localStorage.setItem('mindscan_session_id', sessionId!);
       
-      res = await fetch(`${API_BASE}/api/predict?session_id=${sessionId}`, {
+      res = await fetchWithTimeout(`${API_BASE}/api/predict?session_id=${sessionId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -199,6 +210,7 @@ export async function analyzeSurveyData(data: any, language: 'vi' | 'en' | 'de' 
                       language === 'fr' ? 'Veuillez vérifier que le serveur backend est en cours d\'exécution.' :
                       language === 'zh' ? '请检查后端服务器是否正在运行。' :
                       'Please check if the backend server is running.';
+
     return {
       stress_level: "Medium",
       confidence_score: 0.5,

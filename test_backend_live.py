@@ -2,6 +2,7 @@ import sys
 import urllib.request
 import urllib.error
 import json
+from backend.tests.fixtures_loader import get_case
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -35,16 +36,7 @@ print(f"[2] CREATE SESSION {s}: {session_id[:8]}...")
 assert s == 201 and session_id
 
 # 3. Submit survey - predict
-survey = {
-    "age": 20, "gender": "male",
-    "anxiety_level": 14, "self_esteem": 10, "mental_health_history": 0,
-    "depression": 12, "headache": 3, "blood_pressure": 2,
-    "sleep_quality": 1.5, "breathing_problem": 2, "noise_level": 3,
-    "living_conditions": 2, "safety": 3, "basic_needs": 2,
-    "academic_performance": 2, "study_load": 4, "teacher_student_relationship": 3,
-    "future_career_concerns": 4, "social_support": 1, "peer_pressure": 3,
-    "extracurricular_activities": 2, "bullying": 1
-}
+survey = get_case("high_stress")["input"]
 s, d = req("POST", f"/api/predict?session_id={session_id}", data=survey)
 pred = d.get("prediction", {})
 pred_id = pred.get("pred_id")
@@ -89,16 +81,7 @@ assert s == 404
 # 9. Low-stress scenario (should return balanced recommendation)
 s2, d2 = req("POST", "/api/session")
 session_id2 = d2.get("session_id", "")
-low_stress_survey = {
-    "age": 22, "gender": "female",
-    "anxiety_level": 3, "self_esteem": 25, "mental_health_history": 0,
-    "depression": 2, "headache": 1, "blood_pressure": 1,
-    "sleep_quality": 4, "breathing_problem": 1, "noise_level": 2,
-    "living_conditions": 4, "safety": 4, "basic_needs": 4,
-    "academic_performance": 4, "study_load": 2, "teacher_student_relationship": 4,
-    "future_career_concerns": 2, "social_support": 3, "peer_pressure": 1,
-    "extracurricular_activities": 4, "bullying": 0
-}
+low_stress_survey = get_case("low_stress")["input"]
 s, d = req("POST", f"/api/predict?session_id={session_id2}", data=low_stress_survey)
 pred2 = d.get("prediction", {})
 print(f"[9] LOW STRESS PREDICT {s}: stress_level={pred2.get('stress_level')}, recs={len(pred2.get('recommendations', []))}")

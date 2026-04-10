@@ -3,6 +3,7 @@ import traceback
 from backend.database import engine, Base
 from backend.models import Session, Response
 from backend.schemas import SurveyInput
+from backend.tests.fixtures_loader import get_case
 
 async def test():
     try:
@@ -16,7 +17,7 @@ async def test():
             await db.commit()
             await db.refresh(new_session)
             
-            survey = SurveyInput(age=20, gender='male', anxiety_level=5, depression=5, self_esteem=15, mental_health_history=0, blood_pressure=2, sleep_quality=3, headache=0, breathing_problem=0, study_load=3, academic_performance=3, teacher_student_relationship=3, future_career_concerns=3, social_support=1, peer_pressure=0, extracurricular_activities=2, bullying=0, noise_level=0, living_conditions=3, safety=3, basic_needs=3)
+            survey = SurveyInput(**get_case("baseline_medium")["input"])
             
             new_response = Response(
                 session_id=new_session.session_id,

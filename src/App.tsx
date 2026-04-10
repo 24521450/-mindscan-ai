@@ -36,7 +36,9 @@ import {
   LayoutDashboard,
   TrendingUp,
   Calendar,
-  GitCompare
+  GitCompare,
+  X,
+  CircleHelp
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -52,16 +54,10 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
   // Arc progress: Low=25%, Medium=55%, High=85% of the arc
   const arcProgress = level === 'Low' ? 0.25 : level === 'Medium' ? 0.55 : 0.85;
 
-  // SVG arc calculation for a half-circle gauge
-  const cx = 50, cy = 50, r = 40;
-  const startAngle = Math.PI; // 180°
-  const endAngle = startAngle + arcProgress * Math.PI;
-  const x1 = cx + r * Math.cos(startAngle);
-  const y1 = cy + r * Math.sin(startAngle);
-  const x2 = cx + r * Math.cos(endAngle);
-  const y2 = cy + r * Math.sin(endAngle);
-  const largeArc = arcProgress > 0.5 ? 1 : 0;
-  const arcPath = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
+  // Use a fixed semicircle path so progress rendering is stable across browsers.
+  const semicirclePath = 'M 10 50 A 40 40 0 0 1 90 50';
+  const semicircleLength = 126; // Approximate length of a 180deg arc with r=40.
+  const progressLength = Math.max(0, Math.min(1, arcProgress)) * semicircleLength;
 
   const levelDisplay = t
     ? (level === 'Low' ? t('results.low') : level === 'Medium' ? t('results.medium') : t('results.high'))
@@ -69,8 +65,8 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
   const levelColor = level === 'Low' ? '#006b60' : level === 'Medium' ? '#006b60' : '#a53173';
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-56 h-28 overflow-hidden">
+    <div className="w-full max-w-[17rem] mx-auto flex flex-col items-center justify-center text-center">
+      <div className="relative w-full max-w-[14rem] h-28 overflow-hidden mx-auto">
         <svg viewBox="0 0 100 55" className="w-full h-full">
           <defs>
             <linearGradient id="gaugeGradientNew" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -80,33 +76,32 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
           </defs>
           {/* Track */}
           <path
-            d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+            d={semicirclePath}
             fill="none"
             stroke={isDarkMode ? '#1e293b' : '#dde3e7'}
             strokeWidth="8"
             strokeLinecap="round"
           />
           {/* Filled arc */}
-          <motion.path
-            d={arcPath}
+          <path
+            d={semicirclePath}
             fill="none"
             stroke="url(#gaugeGradientNew)"
             strokeWidth="10"
             strokeLinecap="round"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 1.4, ease: 'easeOut' }}
+            strokeDasharray={`${progressLength} ${semicircleLength}`}
+            strokeDashoffset="0"
           />
         </svg>
       </div>
-      <div className="text-center -mt-2">
+      <div className="mt-1 space-y-1 text-center">
         <div
-          className="text-4xl font-black leading-tight"
+          className="text-4xl font-black leading-none tracking-tight text-center"
           style={{ color: levelColor, fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
         >
           {levelDisplay}
         </div>
-        <div className={`text-xs font-semibold mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+        <div className={`text-xs font-semibold text-center ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
           style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
           {Math.round(confidence * 100)}% {t ? t('ui.confidenceInterval') : 'Confidence Interval'}
         </div>
@@ -187,6 +182,58 @@ type ActionCardItem = {
   categoryKey: string;
 };
 
+type AssessmentScale = { value: number; label: string };
+type AssessmentQuestion = { id: number; text: string; reverse?: boolean };
+
+const GAD_SCALE: AssessmentScale[] = [
+  { value: 0, label: 'Not at all' },
+  { value: 1, label: 'Several days' },
+  { value: 2, label: 'More than half the days' },
+  { value: 3, label: 'Nearly every day' }
+];
+
+const GAD_QUESTIONS: AssessmentQuestion[] = [
+  { id: 1, text: 'Feeling nervous, anxious, or on edge' },
+  { id: 2, text: 'Not being able to stop or control worrying' },
+  { id: 3, text: 'Worrying too much about different things' },
+  { id: 4, text: 'Trouble relaxing' },
+  { id: 5, text: 'Being so restless that it is hard to sit still' },
+  { id: 6, text: 'Becoming easily annoyed or irritable' },
+  { id: 7, text: 'Feeling afraid, as if something awful might happen' }
+];
+
+const PHQ_QUESTIONS: AssessmentQuestion[] = [
+  { id: 1, text: 'Little interest or pleasure in doing things' },
+  { id: 2, text: 'Feeling down, depressed, or hopeless' },
+  { id: 3, text: 'Trouble falling or staying asleep, or sleeping too much' },
+  { id: 4, text: 'Feeling tired or having little energy' },
+  { id: 5, text: 'Poor appetite or overeating' },
+  { id: 6, text: 'Feeling bad about yourself or that you are a failure' },
+  { id: 7, text: 'Trouble concentrating on things' },
+  { id: 8, text: 'Moving/speaking slowly or being fidgety/restless' },
+  { id: 9, text: 'Thoughts that you would be better off dead or of hurting yourself' }
+];
+
+const ROSENBERG_SCALE: AssessmentScale[] = [
+  { value: 1, label: 'Strongly disagree' },
+  { value: 2, label: 'Disagree' },
+  { value: 3, label: 'Agree' },
+  { value: 4, label: 'Strongly agree' }
+];
+
+const ROSENBERG_QUESTIONS: AssessmentQuestion[] = [
+  { id: 1, text: 'On the whole, I am satisfied with myself.' },
+  { id: 2, text: 'At times, I think I am no good at all.', reverse: true },
+  { id: 3, text: 'I feel that I have a number of good qualities.' },
+  { id: 4, text: 'I am able to do things as well as most other people.' },
+  { id: 5, text: 'I feel I do not have much to be proud of.', reverse: true },
+  { id: 6, text: 'I certainly feel useless at times.', reverse: true },
+  { id: 7, text: 'I feel that I am a person of worth, at least on an equal plane with others.' },
+  { id: 8, text: 'I wish I could have more respect for myself.', reverse: true },
+  { id: 9, text: 'All in all, I am inclined to feel that I am a failure.', reverse: true },
+  { id: 10, text: 'I take a positive attitude toward myself.' }
+];
+
 const LiquidButton = ({ children, onClick, variant = 'primary', className = "", icon: Icon }: any) => {
   const baseStyle = "relative overflow-hidden rounded-full font-semibold px-8 py-4 transition-all duration-300 flex items-center justify-center gap-2 group";
   const variants = {
@@ -226,9 +273,15 @@ export default function App() {
   });
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [showAllRecs, setShowAllRecs] = useState(false);
   const [stepError, setStepError] = useState<string>('');
+  const [leftAssessmentPanel, setLeftAssessmentPanel] = useState<'gad' | 'phq' | null>(null);
+  const [isRosenbergPanelOpen, setIsRosenbergPanelOpen] = useState(false);
+  const [gadAnswers, setGadAnswers] = useState<Record<number, number>>({});
+  const [phqAnswers, setPhqAnswers] = useState<Record<number, number>>({});
+  const [rosenbergAnswers, setRosenbergAnswers] = useState<Record<number, number>>({});
   const [earthRotation, setEarthRotation] = useState(0);
   const [activeDataModule, setActiveDataModule] = useState<'dashboard' | 'analytics'>('dashboard');
   const [stressTrendPeriod, setStressTrendPeriod] = useState<'weekly' | 'monthly'>('weekly');
@@ -257,6 +310,13 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    if (currentStep !== 2) {
+      setLeftAssessmentPanel(null);
+      setIsRosenbergPanelOpen(false);
+    }
+  }, [currentStep]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -330,6 +390,56 @@ export default function App() {
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const gadAnsweredCount = Object.keys(gadAnswers).length;
+  const phqAnsweredCount = Object.keys(phqAnswers).length;
+  const rosenbergAnsweredCount = Object.keys(rosenbergAnswers).length;
+
+  const gadScore = GAD_QUESTIONS.reduce((sum, q) => sum + (gadAnswers[q.id] ?? 0), 0);
+  const phqScore = PHQ_QUESTIONS.reduce((sum, q) => sum + (phqAnswers[q.id] ?? 0), 0);
+  const rosenbergRawSum = ROSENBERG_QUESTIONS.reduce((sum, q) => {
+    const value = rosenbergAnswers[q.id];
+    if (value == null) {
+      return sum;
+    }
+    return sum + (q.reverse ? (5 - value) : value);
+  }, 0);
+  const rosenbergScore = Math.max(0, rosenbergRawSum - 10);
+
+  const handleAssessmentAnswer = (test: 'gad' | 'phq' | 'rosenberg', questionId: number, value: number) => {
+    if (test === 'gad') {
+      const next = { ...gadAnswers, [questionId]: value };
+      setGadAnswers(next);
+      if (Object.keys(next).length === GAD_QUESTIONS.length) {
+        const score = GAD_QUESTIONS.reduce((sum, q) => sum + (next[q.id] ?? 0), 0);
+        handleInputChange('anxiety_level', score);
+        setLeftAssessmentPanel(null);
+      }
+      return;
+    }
+
+    if (test === 'phq') {
+      const next = { ...phqAnswers, [questionId]: value };
+      setPhqAnswers(next);
+      if (Object.keys(next).length === PHQ_QUESTIONS.length) {
+        const score = PHQ_QUESTIONS.reduce((sum, q) => sum + (next[q.id] ?? 0), 0);
+        handleInputChange('depression', score);
+        setLeftAssessmentPanel(null);
+      }
+      return;
+    }
+
+    const next = { ...rosenbergAnswers, [questionId]: value };
+    setRosenbergAnswers(next);
+    if (Object.keys(next).length === ROSENBERG_QUESTIONS.length) {
+      const score = Math.max(0, ROSENBERG_QUESTIONS.reduce((sum, q) => {
+        const v = next[q.id] ?? 1;
+        return sum + (q.reverse ? (5 - v) : v);
+      }, 0) - 10);
+      handleInputChange('self_esteem', score);
+      setIsRosenbergPanelOpen(false);
+    }
   };
 
   useEffect(() => {
@@ -754,21 +864,151 @@ export default function App() {
         );
       case 2:
         return (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
             <h2 className={`text-2xl font-extrabold mb-2 tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('questions.s2Title')}</h2>
+            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Complete the recommended assessments to enable accurate scoring.
+            </p>
+
+            <div className="hidden xl:block">
+              <AnimatePresence>
+                {leftAssessmentPanel && (
+                  <motion.aside
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className={`absolute top-0 -left-[355px] w-[320px] h-[540px] rounded-[1.75rem] border p-4 shadow-[0_16px_50px_rgba(0,0,0,0.12)] overflow-hidden ${isDarkMode ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-slate-200'}`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`text-sm font-extrabold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {leftAssessmentPanel === 'gad' ? 'GAD-7 (0-21)' : 'PHQ-9 (0-27)'}
+                      </div>
+                      <button onClick={() => setLeftAssessmentPanel(null)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className={`text-xs mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Over the last 2 weeks, how often have you been bothered by the following?
+                    </div>
+                    <div className={`text-xs mb-3 font-semibold ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
+                      {leftAssessmentPanel === 'gad' ? `${gadAnsweredCount}/7 answered` : `${phqAnsweredCount}/9 answered`}
+                    </div>
+                    <div className="h-[430px] overflow-y-auto pr-1 space-y-3">
+                      {(leftAssessmentPanel === 'gad' ? GAD_QUESTIONS : PHQ_QUESTIONS).map((q) => {
+                        const selected = leftAssessmentPanel === 'gad' ? gadAnswers[q.id] : phqAnswers[q.id];
+                        return (
+                          <div key={`${leftAssessmentPanel}-${q.id}`} className={`rounded-xl p-3 border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{q.id}. {q.text}</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {GAD_SCALE.map((scale) => (
+                                <button
+                                  key={scale.value}
+                                  onClick={() => handleAssessmentAnswer(leftAssessmentPanel, q.id, scale.value)}
+                                  className={`text-[11px] px-2 py-1.5 rounded-lg border text-left ${selected === scale.value
+                                      ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-600 text-white border-blue-600')
+                                      : (isDarkMode ? 'bg-white/5 text-slate-300 border-white/15 hover:bg-white/10' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300')
+                                    }`}
+                                >
+                                  {scale.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.aside>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="hidden xl:block">
+              <AnimatePresence>
+                {isRosenbergPanelOpen && (
+                  <motion.aside
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    className={`absolute top-0 -right-[355px] w-[320px] h-[540px] rounded-[1.75rem] border p-4 shadow-[0_16px_50px_rgba(0,0,0,0.12)] overflow-hidden ${isDarkMode ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-slate-200'}`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`text-sm font-extrabold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Rosenberg (0-30)</div>
+                      <button onClick={() => setIsRosenbergPanelOpen(false)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className={`text-xs mb-3 font-semibold ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
+                      {rosenbergAnsweredCount}/10 answered
+                    </div>
+                    <div className="h-[468px] overflow-y-auto pr-1 space-y-3">
+                      {ROSENBERG_QUESTIONS.map((q) => {
+                        const selected = rosenbergAnswers[q.id];
+                        return (
+                          <div key={`rosenberg-${q.id}`} className={`rounded-xl p-3 border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{q.id}. {q.text}</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {ROSENBERG_SCALE.map((scale) => (
+                                <button
+                                  key={scale.value}
+                                  onClick={() => handleAssessmentAnswer('rosenberg', q.id, scale.value)}
+                                  className={`text-[11px] px-2 py-1.5 rounded-lg border text-left ${selected === scale.value
+                                      ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-600 text-white border-blue-600')
+                                      : (isDarkMode ? 'bg-white/5 text-slate-300 border-white/15 hover:bg-white/10' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300')
+                                    }`}
+                                >
+                                  {scale.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </motion.aside>
+                )}
+              </AnimatePresence>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className={questionCardClass}>
-                <label className={questionLabelClass}>{t('questions.q7')}</label>
+                <div className="flex items-start justify-between gap-2">
+                  <label className={questionLabelClass}>{t('questions.q7')}</label>
+                  <div className="relative group">
+                    <CircleHelp className={`w-4 h-4 mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                    <div className={`pointer-events-none absolute right-0 top-6 z-20 w-56 rounded-xl p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-slate-900 text-slate-200 border border-white/10' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                      GAD-7 anxiety screener for the last 2 weeks.
+                      <button type="button" onClick={() => setLeftAssessmentPanel('gad')} className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 text-white px-2 py-1.5 text-[11px] font-semibold hover:bg-blue-700">Take test</button>
+                    </div>
+                  </div>
+                </div>
                 <CustomSlider min={0} max={21} step={1} value={formData.anxiety_level} onChange={(v) => handleInputChange('anxiety_level', v)} ariaLabel="Anxiety" />
                 <div className={`flex justify-between ${textHintClass}`}><span>0</span><span>21</span></div>
               </div>
               <div className={questionCardClass}>
-                <label className={questionLabelClass}>{t('questions.q8')}</label>
+                <div className="flex items-start justify-between gap-2">
+                  <label className={questionLabelClass}>{t('questions.q8')}</label>
+                  <div className="relative group">
+                    <CircleHelp className={`w-4 h-4 mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                    <div className={`pointer-events-none absolute right-0 top-6 z-20 w-56 rounded-xl p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-slate-900 text-slate-200 border border-white/10' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                      PHQ-9 mood and depression screener for the last 2 weeks.
+                      <button type="button" onClick={() => setLeftAssessmentPanel('phq')} className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 text-white px-2 py-1.5 text-[11px] font-semibold hover:bg-blue-700">Take test</button>
+                    </div>
+                  </div>
+                </div>
                 <CustomSlider min={0} max={27} step={1} value={formData.depression} onChange={(v) => handleInputChange('depression', v)} ariaLabel="Depression" />
                 <div className={`flex justify-between ${textHintClass}`}><span>0</span><span>27</span></div>
               </div>
               <div className={questionCardClass}>
-                <label className={questionLabelClass}>{t('questions.q9')}</label>
+                <div className="flex items-start justify-between gap-2">
+                  <label className={questionLabelClass}>{t('questions.q9')}</label>
+                  <div className="relative group">
+                    <CircleHelp className={`w-4 h-4 mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
+                    <div className={`pointer-events-none absolute right-0 top-6 z-20 w-56 rounded-xl p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-slate-900 text-slate-200 border border-white/10' : 'bg-white text-slate-700 border border-slate-200'}`}>
+                      Rosenberg self-esteem scale with reverse-scored statements.
+                      <button type="button" onClick={() => setIsRosenbergPanelOpen(true)} className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 text-white px-2 py-1.5 text-[11px] font-semibold hover:bg-blue-700">Take test</button>
+                    </div>
+                  </div>
+                </div>
                 <CustomSlider min={0} max={30} step={1} value={formData.self_esteem} onChange={(v) => handleInputChange('self_esteem', v)} ariaLabel="Self Esteem" />
                 <div className={`flex justify-between ${textHintClass}`}><span>0</span><span>30</span></div>
               </div>
@@ -784,6 +1024,59 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            <div className={`rounded-2xl px-4 py-3 border ${isDarkMode ? 'bg-slate-900/70 border-white/10 text-slate-300' : 'bg-white/70 border-slate-200 text-slate-700'}`}>
+              <div className="text-xs font-semibold mb-1">Assessment summary</div>
+              <div className="text-xs">GAD-7: {gadAnsweredCount === 7 ? `${gadScore}/21` : '--'} | PHQ-9: {phqAnsweredCount === 9 ? `${phqScore}/27` : '--'} | Rosenberg: {rosenbergAnsweredCount === 10 ? `${rosenbergScore}/30` : '--'}</div>
+              <div className={`text-[11px] mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Scores are shown only after a test is completed.</div>
+            </div>
+
+            <AnimatePresence>
+              {(leftAssessmentPanel || isRosenbergPanelOpen) && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/50 p-4 xl:hidden overflow-y-auto">
+                  <div className={`mx-auto mt-8 w-full max-w-xl rounded-2xl p-4 border ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+                        {leftAssessmentPanel === 'gad' ? 'GAD-7 (0-21)' : leftAssessmentPanel === 'phq' ? 'PHQ-9 (0-27)' : 'Rosenberg (0-30)'}
+                      </div>
+                      <button onClick={() => { setLeftAssessmentPanel(null); setIsRosenbergPanelOpen(false); }} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+                      {(leftAssessmentPanel === 'gad' ? GAD_QUESTIONS : leftAssessmentPanel === 'phq' ? PHQ_QUESTIONS : ROSENBERG_QUESTIONS).map((q) => {
+                        const selected = leftAssessmentPanel === 'gad'
+                          ? gadAnswers[q.id]
+                          : leftAssessmentPanel === 'phq'
+                            ? phqAnswers[q.id]
+                            : rosenbergAnswers[q.id];
+                        const scaleSet = (!leftAssessmentPanel && isRosenbergPanelOpen) ? ROSENBERG_SCALE : GAD_SCALE;
+                        const testKey: 'gad' | 'phq' | 'rosenberg' = leftAssessmentPanel === 'gad' ? 'gad' : leftAssessmentPanel === 'phq' ? 'phq' : 'rosenberg';
+                        return (
+                          <div key={`mobile-assessment-${q.id}`} className={`rounded-xl p-3 border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{q.id}. {q.text}</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {scaleSet.map((scale) => (
+                                <button
+                                  key={scale.value}
+                                  onClick={() => handleAssessmentAnswer(testKey, q.id, scale.value)}
+                                  className={`text-[11px] px-2 py-1.5 rounded-lg border text-left ${selected === scale.value
+                                      ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-600 text-white border-blue-600')
+                                      : (isDarkMode ? 'bg-white/5 text-slate-300 border-white/15 hover:bg-white/10' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300')
+                                    }`}
+                                >
+                                  {scale.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         );
       case 3:
@@ -1589,33 +1882,6 @@ export default function App() {
               )}
             </div>
 
-            {isSurveyOpen && isCompleted && aiResult && (
-              <div className="hidden lg:flex items-center gap-3 shrink-0 mx-6">
-                <div className={`text-[11px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                  {t('ui.dataModule')}
-                </div>
-                <div className="relative group">
-                  <select
-                    value={activeDataModule}
-                    onChange={(e) => setActiveDataModule(e.target.value as 'dashboard' | 'analytics')}
-                    className={`appearance-none pl-4 pr-10 py-2 rounded-full text-sm font-semibold border backdrop-blur-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-400/40 ${isDarkMode
-                        ? 'bg-white/10 text-slate-100 border-white/15 hover:bg-white/15 shadow-[0_8px_24px_rgba(2,6,23,0.35),inset_0_1px_1px_rgba(255,255,255,0.12)]'
-                        : 'bg-white/55 text-slate-700 border-white/70 hover:bg-white/70 shadow-[0_8px_24px_rgba(15,23,42,0.08),inset_0_1px_1px_rgba(255,255,255,0.9)]'
-                      }`}
-                    style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                  >
-                    <option value="dashboard">{t('ui.module.dashboard')}</option>
-                    <option value="analytics">{t('ui.module.analytics')}</option>
-                  </select>
-                  <ChevronDown
-                    className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${isDarkMode ? 'text-slate-300 group-hover:text-slate-100' : 'text-slate-500 group-hover:text-slate-700'
-                      }`}
-                  />
-                </div>
-              </div>
-            )}
-
             <div className="flex items-center gap-3">
               {!isSurveyOpen && (
                 <>
@@ -2262,10 +2528,10 @@ export default function App() {
             key="survey"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-24 pb-12 max-w-[1360px]' : 'items-center justify-center py-24 max-w-3xl'}`}
+            className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-24 pb-12 max-w-[1360px]' : currentStep === 2 ? 'items-center justify-center py-24 max-w-[1360px]' : 'items-center justify-center py-24 max-w-3xl'}`}
           >
             {!isCompleted ? (
-              <div className={`relative rounded-[2rem] overflow-hidden p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
+              <div className={`relative rounded-[2rem] ${currentStep === 2 ? 'overflow-visible' : 'overflow-hidden'} p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
                 {/* Progress Bar */}
                 <div className="mb-12">
                   <div className={`flex justify-between text-sm font-bold mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -2332,14 +2598,70 @@ export default function App() {
                     <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{t('survey.analyzingDesc')}</p>
                   </div>
                 ) : aiResult ? (
-                  <div className="text-left w-full max-w-[1320px] mx-auto analytics-liquid-bg rounded-[2.5rem] p-4 md:p-6">
-                    <section className={`rounded-[2.75rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : ''} lg:min-h-[640px]`}>
+                  <div className="text-left w-full max-w-[1480px] mx-auto analytics-liquid-bg rounded-[2.5rem] p-4 md:p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
+                      <aside className="hidden lg:block lg:col-span-2">
+                        <div className={`analytics-glass-card rounded-[1.75rem] p-4 sticky top-24 ${isDarkMode ? 'dark' : ''}`}>
+                          <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                            style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                            {t('ui.dataModule')}
+                          </div>
+                          <div className="relative group">
+                            <select
+                              value={activeDataModule}
+                              onChange={(e) => setActiveDataModule(e.target.value as 'dashboard' | 'analytics')}
+                              className={`w-full appearance-none pl-4 pr-10 py-2.5 rounded-full text-sm font-semibold border backdrop-blur-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-400/40 ${isDarkMode
+                                  ? 'bg-white/10 text-slate-100 border-white/15 hover:bg-white/15 shadow-[0_8px_24px_rgba(2,6,23,0.35),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+                                  : 'bg-white/55 text-slate-700 border-white/70 hover:bg-white/70 shadow-[0_8px_24px_rgba(15,23,42,0.08),inset_0_1px_1px_rgba(255,255,255,0.9)]'
+                                }`}
+                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                            >
+                              <option value="dashboard">{t('ui.module.dashboard')}</option>
+                              <option value="analytics">{t('ui.module.analytics')}</option>
+                            </select>
+                            <ChevronDown
+                              className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${isDarkMode ? 'text-slate-300 group-hover:text-slate-100' : 'text-slate-500 group-hover:text-slate-700'
+                                }`}
+                            />
+                          </div>
+                        </div>
+                      </aside>
+
+                      <div className="lg:col-span-10">
+                        <div className="lg:hidden mb-4">
+                          <div className={`analytics-glass-card rounded-[1.5rem] p-4 ${isDarkMode ? 'dark' : ''}`}>
+                            <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                              {t('ui.dataModule')}
+                            </div>
+                            <div className="relative group">
+                              <select
+                                value={activeDataModule}
+                                onChange={(e) => setActiveDataModule(e.target.value as 'dashboard' | 'analytics')}
+                                className={`w-full appearance-none pl-4 pr-10 py-2.5 rounded-full text-sm font-semibold border backdrop-blur-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-400/40 ${isDarkMode
+                                    ? 'bg-white/10 text-slate-100 border-white/15 hover:bg-white/15'
+                                    : 'bg-white/65 text-slate-700 border-white/70 hover:bg-white/75'
+                                  }`}
+                                style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                              >
+                                <option value="dashboard">{t('ui.module.dashboard')}</option>
+                                <option value="analytics">{t('ui.module.analytics')}</option>
+                              </select>
+                              <ChevronDown
+                                className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <section className={`rounded-[2.75rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : ''} lg:min-h-[640px]`}>
                       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
                         <div className="lg:col-span-12 flex flex-col gap-8">
                           {activeDataModule === 'analytics' ? (
                             renderDashboardView()
                           ) : (
-                            <><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                            <>
+                              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                               <div>
                                 <h2 className={`text-3xl lg:text-4xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
                                   style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.resultsPanel.title')}</h2>
@@ -2350,42 +2672,42 @@ export default function App() {
                                 style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
                                 <Activity className="w-4 h-4" /> {t('ui.resultsPanel.last30Days')}
                               </div>
-                            </div>
+                              </div>
 
                               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 flex-1">
                                 {/* Stress Load Card */}
                                 <div className={`lg:col-span-5 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
-                                  <div className="flex items-start justify-between gap-3 mb-4">
+                                  <div className="flex items-start justify-between gap-3 mb-3">
                                     <div>
-                                      <h3 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
+                                      <h3 className={`text-base font-bold leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
                                         style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.resultsPanel.stressLoad')}</h3>
-                                      <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                                      <p className={`text-[11px] mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.resultsPanel.stressLoadDesc')}</p>
                                     </div>
-                                    <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
+                                    <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
                                       }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.live')}</span>
                                   </div>
-                                  <div className="flex flex-col items-center justify-center py-2">
+                                  <div className="w-full flex items-center justify-center py-2">
                                     <GaugeChart level={aiResult.stress_level} confidence={aiResult.confidence_score} t={t} isDarkMode={isDarkMode} />
                                   </div>
-                                  <div className="mt-4 pt-4 grid grid-cols-3 gap-2" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
-                                    <div className="text-center">
-                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                                  <div className="mt-4 pt-3 grid grid-cols-3 gap-2 items-start" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}` }}>
+                                    <div className="flex flex-col items-center justify-center text-center min-w-0">
+                                      <div className={`text-[9px] uppercase tracking-[0.16em] font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.status.title')}</div>
-                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+                                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{insightMeta?.levelLabel || t('results.medium')}</div>
                                     </div>
-                                    <div className="text-center">
-                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                                    <div className="flex flex-col items-center justify-center text-center min-w-0">
+                                      <div className={`text-[9px] uppercase tracking-[0.16em] font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.trend')}</div>
-                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.stable')}</div>
+                                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-rose-300' : 'text-rose-500'}`}
+                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>+12%</div>
                                     </div>
-                                    <div className="text-center">
-                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                                    <div className="flex flex-col items-center justify-center text-center min-w-0">
+                                      <div className={`text-[9px] uppercase tracking-[0.16em] font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.baseline')}</div>
-                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.max(0, Math.round((insightMeta?.confidencePct ?? 0) * 0.8))}%</div>
+                                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.stable')}</div>
                                     </div>
                                   </div>
                                 </div>
@@ -2478,12 +2800,18 @@ export default function App() {
                                       <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.anonymousHistoryDesc')}</p>
                                     </div>
-                                    <button className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline`}
-                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" /></button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsExpanded(prev => !prev)}
+                                      className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline relative z-10 pointer-events-auto`}
+                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                                    >
+                                      {isExpanded ? t('ui.showLess') : t('ui.viewFullLog')} <ArrowRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                                    </button>
                                   </div>
                                   <div className={`p-5 rounded-[2rem] border ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/25 backdrop-blur-3xl border-white/40'}`}>
                                     <div className="space-y-3">
-                                      {sessionHistory.slice(0, 5).map((session, idx) => {
+                                      {(isExpanded ? sessionHistory : sessionHistory.slice(0, 5)).map((session, idx) => {
                                         const score = session.level === 'High' ? '8.1' : session.level === 'Medium' ? '6.2' : '4.8';
                                         return (
                                           <div key={`history-${session.date}-${idx}`}
@@ -2567,6 +2895,9 @@ export default function App() {
                         </div>
                       </div>
                     </section>
+
+                      </div>
+                    </div>
 
 
                     <div className="mt-12 pt-8 border-t border-gray-100/20 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
