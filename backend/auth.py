@@ -4,7 +4,15 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "super_secret_mindscan_key_123")
+
+def _require_jwt_secret() -> str:
+    raw = os.getenv("JWT_SECRET_KEY")
+    if raw is None or not raw.strip():
+        raise ValueError("JWT_SECRET_KEY environment variable is not set")
+    return raw.strip()
+
+
+SECRET_KEY = _require_jwt_secret()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 

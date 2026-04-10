@@ -1,10 +1,3 @@
-import subprocess
-import sys
-try:
-    import httpx
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "httpx"])
-
 from fastapi.testclient import TestClient
 from backend.main import app
 import traceback

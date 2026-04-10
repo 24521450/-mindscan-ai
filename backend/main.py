@@ -7,8 +7,10 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
+# Fail-fast: JWT secret must be set before any route module loads
+import backend.auth  # noqa: F401
+
 from backend.routers import user, admin
-from backend.database import engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,12 +19,7 @@ async def lifespan(app: FastAPI):
     from backend.services.ml_service import get_model_and_scaler
     # Attempt to preload ML models at startup to catch errors early
     get_model_and_scaler()
-    
-    # Create DB tables if they don't exist
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-        print("Database tables ensured.")
-        
+
     yield
     # Shutdown: Clean up resources
     print("Backend shutting down")

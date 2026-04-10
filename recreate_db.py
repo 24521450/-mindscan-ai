@@ -1,15 +1,20 @@
-import asyncio
-from backend.models import Base
-from backend.database import engine
+"""
+Reset the database schema using Alembic (downgrade to empty, then apply all migrations).
 
-async def recreate():
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
-        print("Database recreated successfully via SQLAlchemy!")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+Run from the repository root with venv activated and backend/.env configured:
+    python recreate_db.py
 
-asyncio.run(recreate())
+Requires: pip install -r backend/requirements.txt
+"""
+import subprocess
+import sys
+
+
+def main() -> None:
+    subprocess.check_call([sys.executable, "-m", "alembic", "downgrade", "base"])
+    subprocess.check_call([sys.executable, "-m", "alembic", "upgrade", "head"])
+    print("Database schema recreated (Alembic: downgrade base → upgrade head).")
+
+
+if __name__ == "__main__":
+    main()

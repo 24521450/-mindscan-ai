@@ -228,6 +228,7 @@ export default function App() {
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
   const [showAllRecs, setShowAllRecs] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [stepError, setStepError] = useState<string>('');
   const [earthRotation, setEarthRotation] = useState(0);
   const [activeDataModule, setActiveDataModule] = useState<'dashboard' | 'analytics'>('dashboard');
@@ -384,6 +385,12 @@ export default function App() {
       setSessionHistory(dummyHistory);
     }
   }, []);
+
+  useEffect(() => {
+    if (sessionHistory.length <= 5) {
+      setIsExpanded(false);
+    }
+  }, [sessionHistory.length]);
 
   const saveToHistory = (result: AIRecommendation) => {
     const newEntry = {
@@ -2478,12 +2485,29 @@ export default function App() {
                                       <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.anonymousHistoryDesc')}</p>
                                     </div>
-                                    <button className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline`}
-                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" /></button>
+                                    {sessionHistory.length > 5 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setIsExpanded((prev) => !prev)}
+                                        className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline cursor-pointer shrink-0`}
+                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                                        aria-expanded={isExpanded}
+                                      >
+                                        {isExpanded ? (
+                                          <>
+                                            <ArrowLeft className="w-3.5 h-3.5" /> {t('ui.showLess')}
+                                          </>
+                                        ) : (
+                                          <>
+                                            {t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" />
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
                                   </div>
                                   <div className={`p-5 rounded-[2rem] border ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/25 backdrop-blur-3xl border-white/40'}`}>
                                     <div className="space-y-3">
-                                      {sessionHistory.slice(0, 5).map((session, idx) => {
+                                      {(isExpanded ? sessionHistory : sessionHistory.slice(0, 5)).map((session, idx) => {
                                         const score = session.level === 'High' ? '8.1' : session.level === 'Medium' ? '6.2' : '4.8';
                                         return (
                                           <div key={`history-${session.date}-${idx}`}

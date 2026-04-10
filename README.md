@@ -153,7 +153,19 @@ DATABASE_URL=sqlite+aiosqlite:///./mindscan_ai.db
 JWT_SECRET_KEY=your-super-secret-key-here
 ```
 
-**Bước 4 — Khởi động server Uvicorn:**
+**Bước 4 — Áp dụng schema cơ sở dữ liệu (Alembic):**
+
+Từ thư mục gốc dự án (nơi có file `alembic.ini`), với venv đã kích hoạt:
+
+```bash
+alembic upgrade head
+```
+
+Lệnh này tạo/cập nhật các bảng theo migration trong `alembic/versions/`. Chạy lại sau khi kéo code mới có migration mới.
+
+> **Đã có file SQLite từ bản cũ dùng `create_all`?** Nếu các bảng đã tồn tại và trùng với migration đầu tiên, bạn có thể đánh dấu revision hiện tại mà không chạy lại DDL: `alembic stamp head`. Cài mới hoặc DB trống thì chỉ cần `alembic upgrade head`.
+
+**Bước 5 — Khởi động server Uvicorn:**
 
 ```bash
 uvicorn backend.main:app --port 8080 --reload

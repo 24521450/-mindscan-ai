@@ -10,6 +10,17 @@ load_dotenv(dotenv_path)
 # Example format: mysql+aiomysql://user:password@hostname:3306/dbname
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./mindscan_ai.db")
 
+
+def get_sync_database_url(url: str | None = None) -> str:
+    """Map async driver URLs to sync URLs for Alembic migrations."""
+    u = (url or DATABASE_URL).strip()
+    if "+aiosqlite" in u:
+        return u.replace("sqlite+aiosqlite", "sqlite", 1)
+    if "+aiomysql" in u:
+        return u.replace("+aiomysql", "+pymysql", 1)
+    return u
+
+
 engine = create_async_engine(DATABASE_URL, echo=True)
 
 # Create a customized Session class
