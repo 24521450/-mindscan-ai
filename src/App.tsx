@@ -235,6 +235,8 @@ export default function App() {
   const [activeDataModule, setActiveDataModule] = useState<'dashboard' | 'analytics'>('dashboard');
   const [stressTrendPeriod, setStressTrendPeriod] = useState<'weekly' | 'monthly'>('weekly');
 const [radarAnimated, setRadarAnimated] = useState(false);
+  const [heroVariant, setHeroVariant] = useState<1 | 2>(2);
+  const [earthRotation, setEarthRotation] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!localStorage.getItem('mindscan_currentUser'));
   const [showLoginConfirm, setShowLoginConfirm] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(() => {
@@ -307,6 +309,17 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
+
+  // Earth rotation for hero variant 1 (both light and dark mode)
+  useEffect(() => {
+    if (heroVariant !== 1) return;
+    const interval = setInterval(() => {
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const amount = 30 + Math.random() * 60;
+      setEarthRotation(prev => prev + (direction * amount));
+    }, 2666);
+    return () => clearInterval(interval);
+  }, [heroVariant]);
 
   const languageSwitcher = (
     <div className="relative group/lang">
@@ -2344,25 +2357,56 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
               {isDarkMode ? (
                 /* ========== DARK MODE: centered full-globe layout ========== */
                 <>
-                  {/* Earth Background — centered */}
+                  {/* Earth Background — switches based on heroVariant */}
                   <div className="absolute inset-0 z-[5] flex items-center justify-center pointer-events-none overflow-hidden">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8, y: 100 }}
-                      animate={{ opacity: 0.9, scale: 1, y: -80 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      style={{ width: '100vw', maxWidth: '960px', minWidth: '720px', aspectRatio: '1/1' }}
-                    >
-                      <motion.img
-                        src="https://image2url.com/r2/default/images/1775837714078-559555ac-f611-48f2-afde-5968948264e1.png"
-                        alt="Earth"
-                        className="w-full h-full object-cover rounded-full"
-                        style={{
-                          maskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)',
-                          WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)'
-                        }}
-                      />
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-[#0B0F19]/80 to-[#0B0F19] pointer-events-none" />
-                    </motion.div>
+                    <AnimatePresence mode="wait">
+                      {heroVariant === 1 ? (
+                        /* Dark v1: Old rotating grayscale Earth from Unsplash */
+                        <motion.div
+                          key="dark-globe-old"
+                          initial={{ opacity: 0, scale: 0.8, y: 200 }}
+                          animate={{ opacity: 0.85, scale: 1, y: -160 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          style={{ width: '180vw', maxWidth: '1920px', minWidth: '1440px', aspectRatio: '1/1' }}
+                        >
+                          <motion.img
+                            src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop"
+                            alt="Earth"
+                            className="w-full h-full object-cover rounded-full"
+                            style={{
+                              filter: 'grayscale(1) contrast(1.2) brightness(0.7)',
+                              maskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)',
+                              WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)'
+                            }}
+                            animate={{ rotate: earthRotation }}
+                            transition={{ duration: 2.66, ease: "easeInOut" }}
+                          />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-[#0B0F19]/80 to-[#0B0F19] pointer-events-none" />
+                        </motion.div>
+                      ) : (
+                        /* Dark v2: Current space Earth */
+                        <motion.div
+                          key="dark-globe-new"
+                          initial={{ opacity: 0, scale: 0.8, y: 100 }}
+                          animate={{ opacity: 0.9, scale: 1, y: -80 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          style={{ width: '100vw', maxWidth: '960px', minWidth: '720px', aspectRatio: '1/1' }}
+                        >
+                          <motion.img
+                            src="https://image2url.com/r2/default/images/1775837714078-559555ac-f611-48f2-afde-5968948264e1.png"
+                            alt="Earth"
+                            className="w-full h-full object-cover rounded-full"
+                            style={{
+                              maskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)',
+                              WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)'
+                            }}
+                          />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-[#0B0F19]/80 to-[#0B0F19] pointer-events-none" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                   {/* Bottom gradient */}
                   <div className="absolute bottom-0 left-0 w-full h-[30vh] bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/90 to-transparent z-[2] pointer-events-none" />
@@ -2420,51 +2464,93 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                 /* ========== LIGHT MODE: Glassmorphism overlap layout ========== */
                 <div className="relative z-10 container mx-auto px-6 flex flex-col justify-center min-h-screen pt-28 pb-16">
 
-                  {/* Background Globe - Absolute positioned behind all content */}
+                  {/* Background Visual - switches between Globe (v1) and Girl Illustration (v2) */}
                   <div className="absolute top-1/2 right-[-20%] md:right-[-10%] lg:right-[0%] -translate-y-1/2 w-[600px] h-[600px] lg:w-[900px] lg:h-[900px] pointer-events-none" style={{ zIndex: -10 }}>
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="w-full h-full relative"
-                    >
-                      <motion.div
-                        className="w-full h-full"
-                        style={{
-                          backgroundImage: 'url(https://image2url.com/r2/default/images/1775833042260-9b4ddd91-fea4-4bd9-acfb-ee4c62c41c64.png)',
-                          backgroundSize: '100%',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
-                          opacity: 0.9
-                        }}
-                      />
-                      {/* Falling flowers */}
-                      {[...Array(8)].map((_, i) => (
+                    <AnimatePresence mode="wait">
+                      {heroVariant === 1 ? (
+                        /* ---- Hero v1: Rotating Globe ---- */
                         <motion.div
-                          key={`flower-${i}`}
-                          className="absolute rounded-full"
+                          key="globe"
+                          initial={{ opacity: 0, scale: 0.85 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className="w-full h-full relative"
                           style={{
-                            width: `${Math.random() * 12 + 8}px`,
-                            height: `${Math.random() * 12 + 8}px`,
-                            backgroundColor: `rgba(255, 235, 59, ${Math.random() * 0.5 + 0.5})`,
-                            left: `${Math.random() * 100}%`,
-                            top: '-20px',
-                            boxShadow: `0 0 ${Math.random() * 8 + 4}px rgba(255, 235, 59, ${Math.random() * 0.5 + 0.4})`
+                            WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)',
+                            maskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)'
                           }}
-                          animate={{
-                            y: ['-20px', '600px'],
-                            x: [`${Math.random() * 100 - 50}px`, `${Math.random() * 100 - 50}px`],
-                            opacity: [0, 0.95, 0]
-                          }}
-                          transition={{
-                            duration: Math.random() * 6 + 8,
-                            repeat: Infinity,
-                            delay: Math.random() * 5,
-                            ease: "easeInOut"
-                          }}
-                        />
-                      ))}
-                    </motion.div>
+                        >
+                          {/* Inner glow for 3D effect */}
+                          <div className="absolute inset-0 rounded-full" style={{
+                            background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 45%, transparent 75%)',
+                            zIndex: 10
+                          }} />
+                          <motion.div
+                            className="w-full h-full rounded-full"
+                            style={{
+                              backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/2/22/Earth_Western_Hemisphere_transparent_background.png)',
+                              backgroundSize: '100%',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              filter: 'brightness(1.8) contrast(0.85) grayscale(0.2) saturate(0.9) blur(1.5px) opacity(0.9)',
+                              mixBlendMode: 'luminosity'
+                            }}
+                            animate={{ rotate: earthRotation }}
+                            transition={{ duration: 2.66, ease: "easeInOut" }}
+                          />
+                          {/* Deep shadow for 3D volume */}
+                          <div className="absolute inset-0 rounded-full shadow-[inset_-20px_-20px_80px_rgba(200,220,255,0.3),inset_30px_30px_80px_rgba(255,255,255,0.8)] z-20 pointer-events-none" />
+                        </motion.div>
+                      ) : (
+                        /* ---- Hero v2: Girl with Flowers Illustration ---- */
+                        <motion.div
+                          key="flowers"
+                          initial={{ opacity: 0, scale: 0.85 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className="w-full h-full relative"
+                        >
+                          <motion.div
+                            className="w-full h-full"
+                            style={{
+                              backgroundImage: 'url(https://image2url.com/r2/default/images/1775833042260-9b4ddd91-fea4-4bd9-acfb-ee4c62c41c64.png)',
+                              backgroundSize: '100%',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              opacity: 0.9
+                            }}
+                          />
+                          {/* Falling flower petals */}
+                          {[...Array(8)].map((_, i) => (
+                            <motion.div
+                              key={`flower-${i}`}
+                              className="absolute rounded-full"
+                              style={{
+                                width: `${Math.random() * 12 + 8}px`,
+                                height: `${Math.random() * 12 + 8}px`,
+                                backgroundColor: `rgba(255, 235, 59, ${Math.random() * 0.5 + 0.5})`,
+                                left: `${Math.random() * 100}%`,
+                                top: '-20px',
+                                boxShadow: `0 0 ${Math.random() * 8 + 4}px rgba(255, 235, 59, ${Math.random() * 0.5 + 0.4})`
+                              }}
+                              animate={{
+                                y: ['-20px', '600px'],
+                                x: [`${Math.random() * 100 - 50}px`, `${Math.random() * 100 - 50}px`],
+                                opacity: [0, 0.95, 0]
+                              }}
+                              transition={{
+                                duration: Math.random() * 6 + 8,
+                                repeat: Infinity,
+                                delay: Math.random() * 5,
+                                ease: "easeInOut"
+                              }}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Foreground Content */}
@@ -2529,6 +2615,37 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                   </div>
                 </div>
               )}
+              {/* ── Hero Variant Toggle Button (bottom-right, both modes) ── */}
+              <div className={`absolute bottom-8 right-8 z-50 flex items-center gap-1 p-1.5 rounded-full backdrop-blur-2xl border shadow-lg ${
+                isDarkMode
+                  ? 'bg-white/10 border-white/20'
+                  : 'bg-white/30 border-white/60'
+              }`}>
+                <button
+                  id="hero-variant-1-btn"
+                  onClick={() => setHeroVariant(1)}
+                  title="Hero version 1 — Globe"
+                  className={`w-9 h-9 rounded-full font-bold text-sm transition-all duration-300 ${
+                    heroVariant === 1
+                      ? 'bg-[#1d70f5] text-white shadow-md'
+                      : isDarkMode
+                        ? 'text-white/60 hover:bg-white/20'
+                        : 'text-slate-600 hover:bg-white/50'
+                  }`}
+                >1</button>
+                <button
+                  id="hero-variant-2-btn"
+                  onClick={() => setHeroVariant(2)}
+                  title="Hero version 2 — Illustration"
+                  className={`w-9 h-9 rounded-full font-bold text-sm transition-all duration-300 ${
+                    heroVariant === 2
+                      ? 'bg-[#1d70f5] text-white shadow-md'
+                      : isDarkMode
+                        ? 'text-white/60 hover:bg-white/20'
+                        : 'text-slate-600 hover:bg-white/50'
+                  }`}
+                >2</button>
+              </div>
             </section>
 
             {/* Wellness Tools Section */}
