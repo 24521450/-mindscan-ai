@@ -1,6 +1,5 @@
-export const translations = {
+export const translations: Record<string, any> = {
   vi: {
-    // Nav & Common
     appName: "Mindscan.ai",
     nav: {
       solutions: "Giải pháp",
@@ -47,6 +46,39 @@ export const translations = {
       modelTitle: "Thông số kỹ thuật Model AI",
       modelAcc: "Độ chính xác Test Set:"
     },
+    // How It Works Modal
+    howItWorks: {
+      title: "Mindscan AI thấu hiểu bạn như thế nào",
+      intro: "AI phân tích sự kết nối giữa lối sống (giấc ngủ, áp lực, học tập) và sức khỏe tinh thần để đưa ra bức tranh toàn cảnh.",
+      pillar1Title: "Khách quan & Không định kiến",
+      pillar1Text: "Bằng cách loại bỏ các định kiến cá nhân, hệ thống của chúng tôi đánh giá sức khỏe tinh thần của bạn hoàn toàn dựa trên các mẫu dữ liệu, không dựa trên các giả định.",
+      pillar2Title: "Phân tích Toàn diện",
+      pillar2Text: "Chúng tôi phân tích 20 chỉ số chính để xác định nguyên nhân cốt lõi của sự bất ổn, không chỉ các triệu chứng bề mặt.",
+      pillar3Title: "Phân tích Ẩn danh",
+      pillar3Text: "Xử lý ẩn danh 100% đảm bảo dữ liệu nhạy cảm của bạn không bao giờ bị lưu trữ, chia sẻ hoặc sử dụng cho mục đích thương mại.",
+      reliability: "Độ tin cậy khớp với chuyên gia: 92.4%",
+      processTitle: "Quy trình hoạt động:",
+      flowStep1: "Dữ liệu Đầu vào",
+      flowStep2: "Xử lý AI",
+      flowStep3: "Bản đồ Tâm trí Cá nhân",
+      close: "Đóng"
+    },
+    // Technology Modal
+    techModal: {
+      title: "CÔNG NGHỆ CHUẨN ĐOÁN: TÂM LÝ HỌC KẾT HỢP TRÍ TUỆ NHÂN TẠO",
+      question: "Mindscan AI dự báo kết quả dựa vào đâu?",
+      intro: "Thay vì những bài đánh giá truyền thống chỉ dựa trên điểm số cộng dồn đơn thuần, hệ thống của chúng tôi ứng dụng mô hình học máy tiên tiến để phân tích sự tương quan phức tạp giữa các chỉ số sinh hoạt và trạng thái tinh thần. Bằng cách xử lý đồng thời 20 nhóm dữ liệu đầu vào, Mindscan AI đóng vai trò như một \"chuyên gia số\", bóc tách từng lớp tín hiệu từ tâm lý, sinh lý đến tương tác xã hội để đưa ra bức tranh toàn cảnh về sức khỏe tinh thần của sinh viên.",
+      pillars: "Ba trụ cột cốt lõi trong phân tích:",
+      pillar1Title: "Khách quan & Khoa học",
+      pillar1Text: "Thuật toán tự động tìm ra mối liên hệ ẩn giấu giữa các yếu tố như chất lượng giấc ngủ, áp lực tài chính và kết quả học tập. Điều này giúp loại bỏ hoàn toàn các định kiến cảm tính, đảm bảo cường độ Stress được đánh giá một cách trung thực nhất.",
+      pillar2Title: "Thấu hiểu đa chiều",
+      pillar2Text: "Chúng tôi thực hiện khảo sát toàn diện qua 5 nhóm đặc điểm: Cá nhân, Hiệu suất học tập, Sức khỏe tâm thần, Thể chất sinh lý và Giao tiếp xã hội. Thay vì nhìn vào bề nổi, AI giúp bạn nhận diện chính xác những \"gốc rễ\" âm thầm gây ra sự bất ổn.",
+      pillar3Title: "An toàn & Bảo mật tuyệt đối",
+      pillar3Text: "Mọi quá trình xử lý suy luận đều hoạt động ẩn danh 100%. Dữ liệu nhạy cảm của bạn được mã hóa và cam kết không bao giờ được ghi nhớ hay sử dụng cho mục đích thương mại, đảm bảo quyền riêng tư tối thượng cho người dùng.",
+      operationTitle: "Nguyên lý vận hành thông minh:",
+      operationText: "Hệ thống sử dụng bộ lọc thông minh giúp so sánh dữ liệu cá nhân của bạn với hàng ngàn kịch bản tâm lý thực tế. Thay vì hiển thị các dòng mã lệnh phức tạp, chúng tôi tập trung vào kết quả cuối cùng: Một chỉ dẫn cá nhân hóa với độ chính xác tương đương 92.4% so với đánh giá từ các chuyên gia tâm lý đầu ngành. Đây không chỉ là công nghệ, mà là sự đồng hành dựa trên dữ liệu để giúp bạn thấu hiểu bản thân mình hơn mỗi ngày.",
+      close: "Đóng"
+    },
     // Footer
     footer: {
       desc: "Hỗ trợ Sức khỏe Tinh thần Sinh viên Toàn cầu.",
@@ -68,7 +100,10 @@ export const translations = {
       btnDecline: "Từ chối & Quay lại",
       btnAccept: "Tôi đồng ý & Bắt đầu"
     },
-    // Buttons & Progress
+    motivational: {
+      quote: "Đối với gen Z, hãy cứ chấp nhận việc bản thân cảm thấy “không ổn”. Khi bạn nhận ra bản thân đang như thế nào, bạn đã bước một bước vào hành trình đi tìm lại chính mình, và rồi từng bước một học những bài học cho bản thân. Và bạn yên tâm rằng bạn sẽ không phải bước những bước đi cô độc trên con đường ấy. Đôi khi việc bạn cần làm là dừng lại một chút, thế giới có thể đợi. Nếu cuộc sống giống như việc đạp xe thì chẳng phải lúc xuống dốc là thời điểm con người có thể nghỉ chân và nhìn nhận mọi thứ xung quanh rõ ràng hơn?",
+      next: "Tiếp tục"
+    },
     survey: {
       step: "Bước",
       completed: "Hoàn thành",
@@ -246,9 +281,9 @@ export const translations = {
       impact: "Tác động",
       impactFactors: "Yếu tố tác động",
       impactFactorsDesc: "Các yếu tố chính ảnh hưởng đến trạng thái stress hiện tại",
-      prominentTrends: "Xu hướng nổi bật",
+      prominentTrends: "Các xu hướng tinh thần nổi bật",
       prominentTrendsFallback: "Mẫu stress được tổng hợp từ dữ liệu đánh giá của bạn.",
-      criticalTouchpoints: "Điểm chạm quan trọng",
+      criticalTouchpoints: "Các yếu tố cần lưu ý",
       anonymousHistoryDesc: "Phân bố stress tổng hợp theo thời gian",
       viewFullLog: "Xem toàn bộ lịch sử",
       recommendedActions: "Hành động khuyến nghị",
@@ -323,6 +358,39 @@ export const translations = {
       modelTitle: "AI Model Technical Specs",
       modelAcc: "Test Set Accuracy:"
     },
+    // How It Works Modal
+    howItWorks: {
+      title: "How Mindscan AI Understands You",
+      intro: "AI analyzes the connection between lifestyle (sleep, pressure, studies) and mental health to provide a comprehensive picture.",
+      pillar1Title: "Objective & Unbiased",
+      pillar1Text: "By removing personal bias, our system evaluates your mental well-being based purely on data patterns, not assumptions.",
+      pillar2Title: "Comprehensive Analysis",
+      pillar2Text: "We analyze 20 key indicators to identify the root causes of instability, not just surface symptoms.",
+      pillar3Title: "Anonymous Analysis",
+      pillar3Text: "100% anonymous processing ensures your sensitive data is never stored, shared, or used for commercial purposes.",
+      reliability: "Expert-Match Reliability: 92.4%",
+      processTitle: "How the Process Works:",
+      flowStep1: "Input Data",
+      flowStep2: "AI Processing",
+      flowStep3: "Personal Mental Map",
+      close: "Close"
+    },
+    // Technology Modal
+    techModal: {
+      title: "DIAGNOSTIC TECHNOLOGY: PSYCHOLOGY MEETS ARTIFICIAL INTELLIGENCE",
+      question: "How does Mindscan AI predict results?",
+      intro: "Instead of traditional assessments based on simple cumulative scores, our system applies advanced machine learning models to analyze complex correlations between behavioral indicators and mental state. By processing 20 data categories simultaneously, Mindscan AI acts as a \"digital expert,\" unpacking signals from psychology, physiology, and social interaction to provide a complete picture of student mental health.",
+      pillars: "Three core pillars of analysis:",
+      pillar1Title: "Objective & Scientific",
+      pillar1Text: "The algorithm automatically discovers hidden relationships between factors like sleep quality, financial pressure, and academic results. This completely eliminates emotional bias and ensures stress intensity is assessed most honestly.",
+      pillar2Title: "Multi-dimensional Understanding",
+      pillar2Text: "We conduct comprehensive surveys across 5 feature groups: Personal, Academic Performance, Mental Health, Physical Physiology, and Social Communication. Rather than surface observation, AI helps you identify the silent \"root causes\" of instability.",
+      pillar3Title: "Safety & Absolute Security",
+      pillar3Text: "All inference processes operate 100% anonymously. Your sensitive data is encrypted and guaranteed never to be recorded or used for commercial purposes, ensuring ultimate user privacy.",
+      operationTitle: "Intelligent Operation Principles:",
+      operationText: "The system uses intelligent filtering to compare your personal data against thousands of real psychological scenarios. Rather than displaying complex code, we focus on the final result: A personalized guideline with accuracy equivalent to 92.4% of assessments from leading psychology experts. This is not just technology—it's data-driven companionship to help you understand yourself better each day.",
+      close: "Close"
+    },
     footer: {
       desc: "Supporting Student Wellness Worldwide.",
       privacy: "Privacy Policy",
@@ -340,7 +408,11 @@ export const translations = {
       h3: "3. ML Limitations",
       p3: "MindScan AI is a preliminary screening tool based on machine learning. Results do not substitute medical diagnoses or professional psychiatric advice.",
       btnDecline: "Decline & Go Back",
-      btnAccept: "I Agree & Start"
+      btnAccept: "I Agree"
+    },
+    motivational: {
+      quote: "For Generation Z, just accept that you're feeling 'not okay'. When you realize how you feel, you've taken a step on your journey to rediscover yourself, and then step by step, learn lessons for yourself. And rest assured that you won't have to take those steps alone on that path. Sometimes what you need to do is pause for a moment; the world can wait. If life is like riding a bicycle, wouldn't the downhill moment be the time when people can rest their feet and see everything around more clearly?",
+      next: "Next"
     },
     survey: {
       step: "Step",
@@ -594,6 +666,39 @@ export const translations = {
       modelTitle: "Specifications techniques du modele IA",
       modelAcc: "Precision sur le jeu de test :"
     },
+    // How It Works Modal
+    howItWorks: {
+      title: "Comment Mindscan AI vous Comprend",
+      intro: "L'IA analyse la connexion entre le mode de vie (sommeil, pression, etudes) et la sante mentale pour fournir une image complete.",
+      pillar1Title: "Objectif et Impartial",
+      pillar1Text: "En eliminant les biais personnels, notre systeme evalue votre bien-etre mental purement basé sur les modeles de donnees, pas sur les suppositions.",
+      pillar2Title: "Analyse Comprehensive",
+      pillar2Text: "Nous analysons 20 indicateurs cles pour identifier les causes profondes de l'instabilite, pas seulement les symptomes en surface.",
+      pillar3Title: "Analyse Anonyme",
+      pillar3Text: "Le traitement 100% anonyme garantit que vos donnees sensibles ne sont jamais stockees, partagees ou utilisees a des fins commerciales.",
+      reliability: "Fiabilite d'Expertise: 92.4%",
+      processTitle: "Comment fonctionne le processus:",
+      flowStep1: "Donnees d'Entree",
+      flowStep2: "Traitement IA",
+      flowStep3: "Carte Mentale Personnelle",
+      close: "Fermer"
+    },
+    // Technology Modal
+    techModal: {
+      title: "TECHNOLOGIE DIAGNOSTIQUE: PSYCHOLOGIE COMBINEE AVEC L'IA",
+      question: "Sur quoi Mindscan AI base-t-il ses predictions?",
+      intro: "Au lieu de traditionnelles evaluations basees sur des scores additionnels simples, notre systeme applique des modeles d'apprentissage automatique avances pour analyser les correlations complexes entre les indicateurs comportementaux et l'etat mental. En traitant simultanement 20 categories de donnees, Mindscan AI agit comme un 'expert numerique', decomposant les signaux de la psychologie, de la physiologie et de l'interaction sociale pour fournir une image complete de la sante mentale des etudiants.",
+      pillars: "Trois piliers fondamentaux de l'analyse:",
+      pillar1Title: "Objectif et Scientifique",
+      pillar1Text: "L'algorithme decouvre automatiquement les relations cachees entre facteurs comme la qualite du sommeil, la pression financiere et les resultats academiques. Cela elimine completement les biais emotionnels et assure une evaluation honnete de l'intensite du stress.",
+      pillar2Title: "Comprehension Multidimensionnelle",
+      pillar2Text: "Nous menons des enquetes completes sur 5 groupes de caracteristiques: Personnel, Performance Academique, Sante Mentale, Physiologie Physique et Communication Sociale. Plutot que d'observers la surface, l'IA vous aide a identifier les 'racines profondes' silencieuses de l'instabilite.",
+      pillar3Title: "Securite Absolue",
+      pillar3Text: "Tous les processus d'inference fonctionnent 100% de maniere anonyme. Vos donnees sensibles sont chiffrees et garanties de ne jamais etre enregistrees ou utilisees a des fins commerciales, assurant votre confidentialite absolue.",
+      operationTitle: "Principes de Fonctionnement Intelligent:",
+      operationText: "Le systeme utilise un filtrage intelligent pour comparer vos donnees personnelles avec des milliers de scenarios psychologiques reels. Plutot que d'afficher du code complexe, nous nous concentrons sur le resultat final: Un guide personnalise avec une precision equivalente a 92.4% des evaluations des principaux experts en psychologie. Ce n'est pas seulement de la technologie—c'est un accompagnement base sur les donnees pour vous aider a mieux vous connaitre chaque jour.",
+      close: "Fermer"
+    },
     footer: {
       desc: "Soutenir le bien-etre etudiant dans le monde.",
       privacy: "Politique de confidentialite",
@@ -612,6 +717,10 @@ export const translations = {
       p3: "MindScan AI est un outil de depistage preliminaire. Les resultats ne remplacent pas un diagnostic medical professionnel.",
       btnDecline: "Refuser & Retour",
       btnAccept: "J'accepte & Commencer"
+    },
+    motivational: {
+      quote: "Pour la génération Z, il est normal d'accepter de ne pas se sentir 'bien'. Lorsque vous réalisez comment vous vous sentez, vous avez fait un pas sur le chemin de la redécouverte de vous-même. Soyez assuré que vous n'aurez pas à parcourir ce chemin seul.",
+      next: "Continuer"
     },
     survey: {
       step: "Etape",
@@ -865,6 +974,39 @@ export const translations = {
       modelTitle: "Technische KI-Spezifikationen",
       modelAcc: "Test-Set Genauigkeit:"
     },
+    // How It Works Modal
+    howItWorks: {
+      title: "Wie Mindscan AI Sie versteht",
+      intro: "Die KI analysiert die Verbindung zwischen Lebensstil (Schlaf, Druck, Studium) und psychischer Gesundheit, um einen umfassenden Überblick zu bieten.",
+      pillar1Title: "Objektiv und Unparteiisch",
+      pillar1Text: "Durch die Beseitigung persönlicher Vorurteile bewertet unser System Ihr psychisches Wohlbefinden rein basierend auf Datenmustern, nicht auf Annahmen.",
+      pillar2Title: "Umfassende Analyse",
+      pillar2Text: "Wir analysieren 20 Schlüsselindikatoren, um die Grundursachen von Instabilität zu identifizieren, nicht nur oberflächliche Symptome.",
+      pillar3Title: "Anonyme Analyse",
+      pillar3Text: "Die 100% anonyme Verarbeitung stellt sicher, dass Ihre sensiblen Daten niemals gespeichert, geteilt oder kommerziell genutzt werden.",
+      reliability: "Experten-Verlässlichkeit: 92,4%",
+      processTitle: "So funktioniert der Prozess:",
+      flowStep1: "Eingabedaten",
+      flowStep2: "KI-Verarbeitung",
+      flowStep3: "Persönliche Gedankenkarte",
+      close: "Schliessen"
+    },
+    // Technology Modal
+    techModal: {
+      title: "DIAGNOSTISCHE TECHNOLOGIE: PSYCHOLOGIE TRIFFT KUNSTLICHE INTELLIGENZ",
+      question: "Worauf basiert die Vorhersage von Mindscan AI?",
+      intro: "Anstatt traditioneller Bewertungen, die auf einfachen kumulativen Werten basieren, wendet unser System fortgeschrittene maschinelle Lernmodelle an, um komplexe Korrelationen zwischen Verhaltensindikatoren und mentalem Zustand zu analysieren. Durch die gleichzeitige Verarbeitung von 20 Datenkategorien fungiert Mindscan AI als 'digitaler Experte' und entschlusselt Signale aus Psychologie, Physiologie und sozialer Interaktion.",
+      pillars: "Drei Kernpfeiler der Analyse:",
+      pillar1Title: "Objektiv und Wissenschaftlich",
+      pillar1Text: "Der Algorithmus entdeckt automatisch verborgene Beziehungen zwischen Faktoren wie Schlafqualitat, finanziellem Druck und akademischen Ergebnissen. Dies beseitigt emotionale Voreingenommenheit vollstandig und gewahrleistet eine ehrliche Bewertung der Stressintensitat.",
+      pillar2Title: "Mehrdimensionales Verstandnis",
+      pillar2Text: "Wir fuhren umfassende Umfragen uber 5 Merkmalgruppen durch: Personlich, Akademische Leistung, Psychische Gesundheit, Physische Physiologie und soziale Kommunikation. Statt Oberflachenbeobachtung hilft die KI Ihnen, die stillen Wurzelursachen von Instabilitat zu identifizieren.",
+      pillar3Title: "Sicherheit und absolute Sicherung",
+      pillar3Text: "Alle Inferenzprozesse funktionieren zu 100% anonym. Ihre sensiblen Daten werden verschlusselt und garantiert nicht fur kommerzielle Zwecke gespeichert oder verwendet.",
+      operationTitle: "Intelligente Betriebsprinzipien:",
+      operationText: "Das System nutzt intelligente Filter, um Ihre personlichen Daten mit Tausenden realer psychologischer Szenarien zu vergleichen. Anstatt komplexen Code anzuzeigen, konzentrieren wir uns auf das Endergebnis: Eine personalisierte Richtlinie mit einer Genauigkeit entsprechend 92,4% der Bewertungen fuhrend er Psychologie-Experten. Dies ist nicht nur Technologie—es ist datengestutzte Begleitung.",
+      close: "Schliessen"
+    },
     footer: {
       desc: "Unterstützung der mentalen Gesundheit von Studierenden weltweit.",
       privacy: "Datenschutzerklärung",
@@ -883,6 +1025,10 @@ export const translations = {
       p3: "Diese App ist ein Screening-Tool. Ergebnisse ersetzen keine ärztliche Diagnose.",
       btnDecline: "Ablehnen & Zurück",
       btnAccept: "Zustimmen & Starten"
+    },
+    motivational: {
+      quote: "Für die Gen Z ist es okay zu akzeptieren, dass man sich 'nicht okay' fühlt. Wenn du erkennst, wie du dich fühlst, hast du einen Schritt auf der Reise zu dir selbst getan. Sei versichert, dass du diesen Weg nicht alleine gehen musst.",
+      next: "Weiter"
     },
     survey: {
       step: "Schritt",
@@ -1136,6 +1282,39 @@ export const translations = {
       modelTitle: "AI 模型技术规格",
       modelAcc: "测试集准确率："
     },
+    // How It Works Modal
+    howItWorks: {
+      title: "Mindscan AI 如何理解您",
+      intro: "AI 分析生活方式（睡眠、压力、学习）与心理健康之间的联系，为您提供全面的图景。",
+      pillar1Title: "客观与公正",
+      pillar1Text: "通过消除个人偏见，我们的系统纯粹基于数据模式而非假设来评估您的心理健康。",
+      pillar2Title: "全面分析",
+      pillar2Text: "我们分析 20 个关键指标，不仅识别表面症状，更重要的是找出根本原因。",
+      pillar3Title: "匿名分析",
+      pillar3Text: "100% 匿名处理确保您的敏感数据永远不会被存储、共享或用于商业目的。",
+      reliability: "专家匹配准确率：92.4%",
+      processTitle: "流程工作原理：",
+      flowStep1: "输入数据",
+      flowStep2: "AI 处理",
+      flowStep3: "个人心理图谱",
+      close: "关闭"
+    },
+    // Technology Modal
+    techModal: {
+      title: "诊断技术：心理学与人工智能结合",
+      question: "Mindscan AI如何预测结果?",
+      intro: "与只是基于简单累加分数的传统评估不同,我们的系统应用先进的机器学习模型来分析行为指标与精神状态之间的复杂相关性。通过同时处理20个数据类别,Mindscan AI充当'数字专家',从心理学、生理学和社交互动信号中获取完整的学生心理健康图景。",
+      pillars: "分析的三个核心支柱:",
+      pillar1Title: "客观且科学",
+      pillar1Text: "算法自动发现睡眠质量、财务压力和学术成绩等因素之间的隐藏关系。这完全消除了情感偏见,确保压力强度评估最为诚实准确。",
+      pillar2Title: "多维理解",
+      pillar2Text: "我们对5个特征组进行全面调查:个人、学术表现、心理健康、生理生理和社交沟通。与其表面观察,AI帮助您识别不稳定的无声'根本原因'。",
+      pillar3Title: "安全和绝对保护",
+      pillar3Text: "所有推理过程100%匿名运行。您的敏感数据已加密,绝对不会被记录或用于商业目的,确保您的最终隐私。",
+      operationTitle: "智能运作原则:",
+      operationText: "该系统使用智能过滤将您的个人数据与数千个真实心理学场景进行比较。与其显示复杂代码,我们关注最终结果:一个个性化指南,其准确度相当于92.4%的领先心理学专家的评估。这不仅仅是技术——这是数据驱动的陪伴,帮助您每天更好地了解自己。",
+      close: "关闭"
+    },
     footer: {
       desc: "支持全球学生的心理健康。",
       privacy: "隐私政策",
@@ -1154,6 +1333,10 @@ export const translations = {
       p3: "MindScan AI 只是一个基于机器学习的初步筛查工具。结果不能代替医学诊断。",
       btnDecline: "拒绝并返回",
       btnAccept: "我同意并开始"
+    },
+    motivational: {
+      quote: "对于 Z 世代来说，接受感到“不适”是可以的。当你意识到自己的感受时，你已经迈出了找回自我旅程的第一步。请放心，在这条路上你并不孤单。",
+      next: "下一步"
     },
     survey: {
       step: "步骤",

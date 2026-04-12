@@ -38,11 +38,13 @@ class SurveyInput(BaseModel):
 class RecommendationResponse(BaseModel):
     reco_id: int
     category: str
+    i18n_key: Optional[str] = None
     title: str
     description: str
 
     class Config:
         from_attributes = True
+
 
 class FeatureContribution(BaseModel):
     feature: str

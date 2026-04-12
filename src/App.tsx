@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   ArrowRight,
   Play,
@@ -37,8 +37,7 @@ import {
   TrendingUp,
   Calendar,
   GitCompare,
-  X,
-  CircleHelp
+  X
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -47,17 +46,27 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Player } from '@lottiefiles/react-lottie-player';
-import { analyzeSurveyData, AIRecommendation } from './services/geminiService';
+import { analyzeSurveyData, AIRecommendation, featureLabels } from './services/geminiService';
 import { translations } from './translations';
+import { ArticleSection } from './components';
 
 const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confidence: number, t?: (key: string) => string, isDarkMode?: boolean }) => {
   // Arc progress: Low=25%, Medium=55%, High=85% of the arc
   const arcProgress = level === 'Low' ? 0.25 : level === 'Medium' ? 0.55 : 0.85;
 
-  // Use a fixed semicircle path so progress rendering is stable across browsers.
-  const semicirclePath = 'M 10 50 A 40 40 0 0 1 90 50';
-  const semicircleLength = 126; // Approximate length of a 180deg arc with r=40.
-  const progressLength = Math.max(0, Math.min(1, arcProgress)) * semicircleLength;
+  // SVG arc calculation for a half-circle gauge
+  const cx = 50, cy = 50, r = 40;
+  const startAngle = Math.PI; // 180°
+  const endAngle = startAngle + arcProgress * Math.PI;
+  const x1 = cx + r * Math.cos(startAngle);
+  const y1 = cy + r * Math.sin(startAngle);
+  const x2 = cx + r * Math.cos(endAngle);
+  const y2 = cy + r * Math.sin(endAngle);
+
+  // Since the maximum arc is 180 degrees (Math.PI), the arc drawn covers at most 180 degrees.
+  // Therefore, largeArcFlag is always 0.
+  const largeArc = 0;
+  const arcPath = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
 
   const levelDisplay = t
     ? (level === 'Low' ? t('results.low') : level === 'Medium' ? t('results.medium') : t('results.high'))
@@ -65,8 +74,8 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
   const levelColor = level === 'Low' ? '#006b60' : level === 'Medium' ? '#006b60' : '#a53173';
 
   return (
-    <div className="w-full max-w-[17rem] mx-auto flex flex-col items-center justify-center text-center">
-      <div className="relative w-full max-w-[14rem] h-28 overflow-hidden mx-auto">
+    <div className="flex flex-col items-center">
+      <div className="relative w-56 h-28 overflow-hidden">
         <svg viewBox="0 0 100 55" className="w-full h-full">
           <defs>
             <linearGradient id="gaugeGradientNew" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -76,32 +85,33 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
           </defs>
           {/* Track */}
           <path
-            d={semicirclePath}
+            d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
             stroke={isDarkMode ? '#1e293b' : '#dde3e7'}
             strokeWidth="8"
             strokeLinecap="round"
           />
           {/* Filled arc */}
-          <path
-            d={semicirclePath}
+          <motion.path
+            d={arcPath}
             fill="none"
             stroke="url(#gaugeGradientNew)"
             strokeWidth="10"
             strokeLinecap="round"
-            strokeDasharray={`${progressLength} ${semicircleLength}`}
-            strokeDashoffset="0"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
           />
         </svg>
       </div>
-      <div className="mt-1 space-y-1 text-center">
+      <div className="text-center -mt-2">
         <div
-          className="text-4xl font-black leading-none tracking-tight text-center"
+          className="text-4xl font-black leading-tight"
           style={{ color: levelColor, fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
         >
           {levelDisplay}
         </div>
-        <div className={`text-xs font-semibold text-center ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+        <div className={`text-xs font-semibold mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
           style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
           {Math.round(confidence * 100)}% {t ? t('ui.confidenceInterval') : 'Confidence Interval'}
         </div>
@@ -142,12 +152,8 @@ const CustomStackedBar = ({ data, height = 'h-12', showLabels = true }: { data: 
 const ActionCard = ({ title, description, icon: Icon, colorClass, isBookmarked, onBookmark, bookmarkAriaLabel, detailsLabel }: { id: string, title: string, description: string, icon: any, colorClass: string, isBookmarked: boolean, onBookmark: (e: React.MouseEvent) => void, bookmarkAriaLabel: string, detailsLabel: string, key?: string }) => {
   return (
     <div className="analytics-glass-card dark:bg-slate-800/50 border border-white/50 dark:border-white/10 shadow-[0_8px_24px_rgba(45,51,55,0.06)] rounded-[2rem] overflow-hidden p-6 flex flex-col h-full transition-all duration-300 hover:-translate-y-2 group">
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 ${colorClass}`}
-        style={{ boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.8)' }}>
-        <Icon className="w-5 h-5" />
-      </div>
       <div className="flex-1">
-        <h4 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2"
+        <h4 className="text-base font-bold bg-gradient-to-r from-black to-slate-800 bg-clip-text text-transparent dark:text-slate-100 dark:bg-none mb-2"
           style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{title}</h4>
         <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-4"
           style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
@@ -182,64 +188,12 @@ type ActionCardItem = {
   categoryKey: string;
 };
 
-type AssessmentScale = { value: number; label: string };
-type AssessmentQuestion = { id: number; text: string; reverse?: boolean };
-
-const GAD_SCALE: AssessmentScale[] = [
-  { value: 0, label: 'Not at all' },
-  { value: 1, label: 'Several days' },
-  { value: 2, label: 'More than half the days' },
-  { value: 3, label: 'Nearly every day' }
-];
-
-const GAD_QUESTIONS: AssessmentQuestion[] = [
-  { id: 1, text: 'Feeling nervous, anxious, or on edge' },
-  { id: 2, text: 'Not being able to stop or control worrying' },
-  { id: 3, text: 'Worrying too much about different things' },
-  { id: 4, text: 'Trouble relaxing' },
-  { id: 5, text: 'Being so restless that it is hard to sit still' },
-  { id: 6, text: 'Becoming easily annoyed or irritable' },
-  { id: 7, text: 'Feeling afraid, as if something awful might happen' }
-];
-
-const PHQ_QUESTIONS: AssessmentQuestion[] = [
-  { id: 1, text: 'Little interest or pleasure in doing things' },
-  { id: 2, text: 'Feeling down, depressed, or hopeless' },
-  { id: 3, text: 'Trouble falling or staying asleep, or sleeping too much' },
-  { id: 4, text: 'Feeling tired or having little energy' },
-  { id: 5, text: 'Poor appetite or overeating' },
-  { id: 6, text: 'Feeling bad about yourself or that you are a failure' },
-  { id: 7, text: 'Trouble concentrating on things' },
-  { id: 8, text: 'Moving/speaking slowly or being fidgety/restless' },
-  { id: 9, text: 'Thoughts that you would be better off dead or of hurting yourself' }
-];
-
-const ROSENBERG_SCALE: AssessmentScale[] = [
-  { value: 1, label: 'Strongly disagree' },
-  { value: 2, label: 'Disagree' },
-  { value: 3, label: 'Agree' },
-  { value: 4, label: 'Strongly agree' }
-];
-
-const ROSENBERG_QUESTIONS: AssessmentQuestion[] = [
-  { id: 1, text: 'On the whole, I am satisfied with myself.' },
-  { id: 2, text: 'At times, I think I am no good at all.', reverse: true },
-  { id: 3, text: 'I feel that I have a number of good qualities.' },
-  { id: 4, text: 'I am able to do things as well as most other people.' },
-  { id: 5, text: 'I feel I do not have much to be proud of.', reverse: true },
-  { id: 6, text: 'I certainly feel useless at times.', reverse: true },
-  { id: 7, text: 'I feel that I am a person of worth, at least on an equal plane with others.' },
-  { id: 8, text: 'I wish I could have more respect for myself.', reverse: true },
-  { id: 9, text: 'All in all, I am inclined to feel that I am a failure.', reverse: true },
-  { id: 10, text: 'I take a positive attitude toward myself.' }
-];
-
 const LiquidButton = ({ children, onClick, variant = 'primary', className = "", icon: Icon }: any) => {
   const baseStyle = "relative overflow-hidden rounded-full font-semibold px-8 py-4 transition-all duration-300 flex items-center justify-center gap-2 group";
   const variants = {
-    primary: "bg-white/30 dark:bg-blue-600/30 backdrop-blur-2xl text-blue-700 dark:text-blue-300 border border-white/50 dark:border-blue-500/30 shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-blue-900/40 hover:bg-white/40 dark:hover:bg-blue-600/50 hover:shadow-[0_8px_32px_0_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,1)] hover:-translate-y-0.5",
-    secondary: "bg-black/5 dark:bg-white/5 backdrop-blur-2xl text-slate-800 dark:text-slate-200 border border-white/40 dark:border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.5)] dark:shadow-slate-900/40 hover:bg-black/10 dark:hover:bg-white/10 hover:shadow-[0_8px_32px_0_rgba(0,0,0,0.08),inset_0_1px_2px_rgba(255,255,255,0.6)] hover:-translate-y-0.5",
-    outline: "bg-transparent border-2 border-slate-300/50 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 hover:bg-white/20 dark:hover:bg-white/5"
+    primary: "bg-blue-600 dark:bg-blue-500 backdrop-blur-2xl text-white border border-blue-500/50 shadow-lg hover:bg-blue-700 dark:hover:bg-blue-600 hover:-translate-y-0.5",
+    secondary: "bg-slate-200/80 dark:bg-slate-800/80 backdrop-blur-2xl text-slate-900 dark:text-slate-100 border border-slate-300/50 dark:border-slate-700/50 shadow-md hover:bg-slate-300/80 dark:hover:bg-slate-700/80 hover:-translate-y-0.5",
+    outline: "bg-transparent border-2 border-slate-300/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50"
   };
 
   return (
@@ -257,6 +211,7 @@ const LiquidButton = ({ children, onClick, variant = 'primary', className = "", 
 
 export default function App() {
   const [hasConsented, setHasConsented] = useState(false);
+  const [showMotivational, setShowMotivational] = useState(false);
   const [language, setLanguage] = useState<'vi' | 'en' | 'de' | 'zh' | 'fr'>('en');
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
@@ -266,6 +221,7 @@ export default function App() {
   const [aiResult, setAiResult] = useState<AIRecommendation | null>(null);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showEthicsModal, setShowEthicsModal] = useState(false);
+  const [showTechnologyModal, setShowTechnologyModal] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [bookmarkedRecs, setBookmarkedRecs] = useState<string[]>(() => {
@@ -273,19 +229,49 @@ export default function App() {
   });
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [showAllRecs, setShowAllRecs] = useState(false);
   const [stepError, setStepError] = useState<string>('');
-  const [leftAssessmentPanel, setLeftAssessmentPanel] = useState<'gad' | 'phq' | null>(null);
-  const [isRosenbergPanelOpen, setIsRosenbergPanelOpen] = useState(false);
-  const [gadAnswers, setGadAnswers] = useState<Record<number, number>>({});
-  const [phqAnswers, setPhqAnswers] = useState<Record<number, number>>({});
-  const [rosenbergAnswers, setRosenbergAnswers] = useState<Record<number, number>>({});
-  const [earthRotation, setEarthRotation] = useState(0);
   const [activeDataModule, setActiveDataModule] = useState<'dashboard' | 'analytics'>('dashboard');
   const [stressTrendPeriod, setStressTrendPeriod] = useState<'weekly' | 'monthly'>('weekly');
-  const [radarAnimated, setRadarAnimated] = useState(false);
+const [radarAnimated, setRadarAnimated] = useState(false);
+  const [heroVariant, setHeroVariant] = useState<1 | 2>(2);
+  const [earthRotation, setEarthRotation] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!localStorage.getItem('mindscan_currentUser'));
+  const [showLoginConfirm, setShowLoginConfirm] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<{ name: string; email: string } | null>(() => {
+    const stored = localStorage.getItem('mindscan_currentUser');
+    return stored ? JSON.parse(stored) : null;
+  });
+
+// Modern login handlers
+  const handleShowLoginConfirm = () => {
+    setShowLoginConfirm(true);
+  };
+
+  const handleConfirmLogin = () => {
+const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.html';
+    window.open(modernLoginUrl, '_blank', 'noopener,noreferrer');
+    setShowLoginConfirm(false);
+  };
+
+  const handleCancelLogin = () => {
+    setShowLoginConfirm(false);
+  };
+
+  // Sync login state from popup via localStorage events
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'mindscan_currentUser') {
+        const userData = e.newValue ? JSON.parse(e.newValue) : null;
+        setCurrentUser(userData);
+        setIsLoggedIn(!!userData);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
   const radarRef = useRef<HTMLDivElement>(null);
   const languageMenuRef = useRef<HTMLDivElement>(null);
 
@@ -298,25 +284,20 @@ export default function App() {
   ] as const;
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Randomly change direction and amount every 2.66s (1.5x faster than 4s)
-      const direction = Math.random() > 0.5 ? 1 : -1;
-      const amount = 30 + Math.random() * 60; // 30 to 90 degrees
-      setEarthRotation(prev => prev + (direction * amount));
-    }, 2666);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
 
+  // Prevent body scroll when modal is open
   useEffect(() => {
-    if (currentStep !== 2) {
-      setLeftAssessmentPanel(null);
-      setIsRosenbergPanelOpen(false);
+    if (showTechnologyModal || showPrivacyModal || showEthicsModal || showEmergencyModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
     }
-  }, [currentStep]);
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showTechnologyModal, showPrivacyModal, showEthicsModal, showEmergencyModal]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -328,6 +309,59 @@ export default function App() {
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
+
+  // Earth rotation for hero variant 1 (both light and dark mode)
+  useEffect(() => {
+    if (heroVariant !== 1) return;
+    const interval = setInterval(() => {
+      const direction = Math.random() > 0.5 ? 1 : -1;
+      const amount = 30 + Math.random() * 60;
+      setEarthRotation(prev => prev + (direction * amount));
+    }, 2666);
+    return () => clearInterval(interval);
+  }, [heroVariant]);
+
+  const languageSwitcher = (
+    <div className="relative group/lang">
+      <div className={`p-2 rounded-xl flex items-center gap-2 cursor-pointer transition-all ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+        }`}>
+        <Globe className={`w-5 h-5 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`} />
+        <span className={`text-sm font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-200' : 'text-slate-800'
+          }`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{language}</span>
+        <ChevronDown className={`w-4 h-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'} transition-transform group-hover/lang:rotate-180`} />
+      </div>
+      {/* Dropdown menu */}
+      <div className="absolute top-full right-0 mt-2 w-36 py-2 rounded-2xl opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all z-50
+        shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border"
+        style={{
+          background: isDarkMode ? 'rgba(15,23,42,0.95)' : 'rgba(255,255,255,0.98)',
+          backdropFilter: 'blur(12px)',
+          borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
+        }}>
+        {[
+          { code: 'vi', label: 'Tiếng Việt' },
+          { code: 'en', label: 'English' },
+          { code: 'fr', label: 'Français' },
+          { code: 'de', label: 'Deutsch' },
+          { code: 'zh', label: '中文' }
+        ].map(lang => (
+          <button
+            key={lang.code}
+            onClick={() => setLanguage(lang.code as any)}
+            className={`w-full text-left px-5 py-2.5 text-sm font-semibold transition-colors flex items-center justify-between
+              ${language === lang.code
+                ? (isDarkMode ? 'text-blue-400 bg-blue-500/10' : 'text-blue-600 bg-blue-50')
+                : (isDarkMode ? 'text-slate-300 hover:bg-white/5' : 'text-slate-600 hover:bg-slate-50')
+              }`}
+            style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
+          >
+            {lang.label}
+            {language === lang.code && <CheckCircle2 className="w-4 h-4" />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   // Translation helper
   const t = (key: string): string => {
@@ -351,6 +385,13 @@ export default function App() {
     return typeof result === 'string' ? result : key;
   };
 
+  const getFeatureLabel = (keyObj: string) => {
+    if (featureLabels[keyObj]) {
+      return (featureLabels[keyObj] as any)[language] || keyObj;
+    }
+    return keyObj;
+  };
+
   const formatTemplate = (template: string, vars: Record<string, string | number>) =>
     template.replace(/\{(\w+)\}/g, (_, key) => String(vars[key] ?? ''));
 
@@ -362,89 +403,39 @@ export default function App() {
     age: '',
     gender: '',
     // Step 1: Academic
-    academic_performance: 3,
-    study_load: 3,
-    teacher_student_relationship: 3,
-    future_career_concerns: 3,
+    academic_performance: 0,
+    study_load: 0,
+    teacher_student_relationship: 0,
+    future_career_concerns: 0,
     // Step 2: Psychological
     anxiety_level: 0,
     depression: 0,
-    self_esteem: 15,
+    self_esteem: 0,
     mental_health_history: 'no',
     // Step 3: Physical
-    blood_pressure: 2,
-    sleep_quality: 3,
+    blood_pressure: 0,
+    sleep_quality: 0,
     headache: 0,
     breathing_problem: 0,
     // Step 4: Social
-    social_support: 1,
+    social_support: 0,
     peer_pressure: 0,
-    extracurricular_activities: 2,
+    extracurricular_activities: 0,
     bullying: 0,
     // Step 5: Environment
     noise_level: 0,
-    living_conditions: 3,
-    safety: 3,
-    basic_needs: 3
+    living_conditions: 0,
+    safety: 0,
+    basic_needs: 0
   });
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const gadAnsweredCount = Object.keys(gadAnswers).length;
-  const phqAnsweredCount = Object.keys(phqAnswers).length;
-  const rosenbergAnsweredCount = Object.keys(rosenbergAnswers).length;
-
-  const gadScore = GAD_QUESTIONS.reduce((sum, q) => sum + (gadAnswers[q.id] ?? 0), 0);
-  const phqScore = PHQ_QUESTIONS.reduce((sum, q) => sum + (phqAnswers[q.id] ?? 0), 0);
-  const rosenbergRawSum = ROSENBERG_QUESTIONS.reduce((sum, q) => {
-    const value = rosenbergAnswers[q.id];
-    if (value == null) {
-      return sum;
-    }
-    return sum + (q.reverse ? (5 - value) : value);
-  }, 0);
-  const rosenbergScore = Math.max(0, rosenbergRawSum - 10);
-
-  const handleAssessmentAnswer = (test: 'gad' | 'phq' | 'rosenberg', questionId: number, value: number) => {
-    if (test === 'gad') {
-      const next = { ...gadAnswers, [questionId]: value };
-      setGadAnswers(next);
-      if (Object.keys(next).length === GAD_QUESTIONS.length) {
-        const score = GAD_QUESTIONS.reduce((sum, q) => sum + (next[q.id] ?? 0), 0);
-        handleInputChange('anxiety_level', score);
-        setLeftAssessmentPanel(null);
-      }
-      return;
-    }
-
-    if (test === 'phq') {
-      const next = { ...phqAnswers, [questionId]: value };
-      setPhqAnswers(next);
-      if (Object.keys(next).length === PHQ_QUESTIONS.length) {
-        const score = PHQ_QUESTIONS.reduce((sum, q) => sum + (next[q.id] ?? 0), 0);
-        handleInputChange('depression', score);
-        setLeftAssessmentPanel(null);
-      }
-      return;
-    }
-
-    const next = { ...rosenbergAnswers, [questionId]: value };
-    setRosenbergAnswers(next);
-    if (Object.keys(next).length === ROSENBERG_QUESTIONS.length) {
-      const score = Math.max(0, ROSENBERG_QUESTIONS.reduce((sum, q) => {
-        const v = next[q.id] ?? 1;
-        return sum + (q.reverse ? (5 - v) : v);
-      }, 0) - 10);
-      handleInputChange('self_esteem', score);
-      setIsRosenbergPanelOpen(false);
-    }
-  };
-
   useEffect(() => {
     // Storage version — bump this to clear stale data after format changes
-    const STORAGE_VERSION = 'v2';
+    const STORAGE_VERSION = 'v3'; // v3: raw feature keys in dummy history + ISO date format
     const storedVersion = localStorage.getItem('mindscan_storage_version');
     if (storedVersion !== STORAGE_VERSION) {
       // Clear old history entries that may have bad color data
@@ -465,29 +456,30 @@ export default function App() {
     if (history) {
       setSessionHistory(JSON.parse(history));
     } else {
+      // Dummy history uses raw feature keys so getFeatureLabel() can translate them
       const dummyHistory = [
         {
-          date: '10 Mar 2026',
+          date: '2026-03-10',
           stressScore: 30,
           level: 'Low',
           features: [
-            { feature: 'Giấc ngủ', importance: 40, color: '#6ee7b7' },
-            { feature: 'Học tập', importance: 30, color: '#2dd4bf' },
-            { feature: 'Xã hội', importance: 20, color: '#c084fc' },
-            { feature: 'Thể chất', importance: 5, color: '#cbd5e1' },
-            { feature: 'Tài chính', importance: 5, color: '#fb7185' },
+            { feature: 'sleep_quality', importance: 40, color: '#6ee7b7' },
+            { feature: 'study_load', importance: 30, color: '#2dd4bf' },
+            { feature: 'social_support', importance: 20, color: '#c084fc' },
+            { feature: 'extracurricular_activities', importance: 5, color: '#cbd5e1' },
+            { feature: 'basic_needs', importance: 5, color: '#fb7185' },
           ]
         },
         {
-          date: '12 Mar 2026',
+          date: '2026-03-12',
           stressScore: 60,
           level: 'Medium',
           features: [
-            { feature: 'Giấc ngủ', importance: 20, color: '#6ee7b7' },
-            { feature: 'Học tập', importance: 40, color: '#2dd4bf' },
-            { feature: 'Xã hội', importance: 15, color: '#c084fc' },
-            { feature: 'Thể chất', importance: 10, color: '#cbd5e1' },
-            { feature: 'Tài chính', importance: 15, color: '#fb7185' },
+            { feature: 'sleep_quality', importance: 20, color: '#6ee7b7' },
+            { feature: 'study_load', importance: 40, color: '#2dd4bf' },
+            { feature: 'social_support', importance: 15, color: '#c084fc' },
+            { feature: 'extracurricular_activities', importance: 10, color: '#cbd5e1' },
+            { feature: 'basic_needs', importance: 15, color: '#fb7185' },
           ]
         }
       ];
@@ -496,8 +488,9 @@ export default function App() {
   }, []);
 
   const saveToHistory = (result: AIRecommendation) => {
+    // Store ISO date string; render uses locale-aware formatting at display time
     const newEntry = {
-      date: new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      date: new Date().toISOString().split('T')[0], // 'YYYY-MM-DD'
       stressScore: result.stress_level === 'High' ? 85 : result.stress_level === 'Medium' ? 50 : 20,
       level: result.stress_level,
       features: result.feature_importance
@@ -509,12 +502,31 @@ export default function App() {
     });
   };
 
+  // Format a stored ISO date string (YYYY-MM-DD) using the current locale
+  const localeMap: Record<string, string> = { vi: 'vi-VN', en: 'en-US', fr: 'fr-FR', de: 'de-DE', zh: 'zh-CN' };
+  const formatSessionDate = (dateStr: string): string => {
+    const d = new Date(dateStr + 'T00:00:00'); // avoid UTC offset shifts
+    if (isNaN(d.getTime())) return dateStr;    // fallback for legacy entries
+    return d.toLocaleDateString(localeMap[language] ?? 'en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    localStorage.removeItem('mindscan_currentUser');
+  };
+
   const startSurvey = () => {
     setIsSurveyOpen(true);
   };
 
   const acceptConsent = () => {
-    setHasConsented(true);
+    setShowMotivational(true); // Hiển thị trang motivational
+  };
+
+  const proceedToSurvey = () => {
+    setHasConsented(true); // Đánh dấu đã đọc đầy đủ
+    setShowMotivational(false);
   };
 
   const toggleBookmark = (id: string) => {
@@ -574,19 +586,22 @@ export default function App() {
     return `hsl(${hue}, 84%, 50%)`;
   };
 
-  const CustomSlider = ({ min, max, step, value, onChange, size = 'normal', ariaLabel }: { min: number, max: number, step: number, value: number, onChange: (val: number) => void, size?: 'normal' | 'large', ariaLabel: string }) => {
+  // CustomSlider: showDots = true (default) để hiện dấu chấm, false để ẩn
+  const CustomSlider = ({ min, max, step, value, onChange, size = 'normal', ariaLabel, showDots = true }: { min: number, max: number, step: number, value: number, onChange: (val: number) => void, size?: 'normal' | 'large', ariaLabel: string, showDots?: boolean }) => {
+    const snapPoints = [];
+    for (let i = min; i <= max; i += 1) snapPoints.push(i);
+    const handleChange = (val: number) => {
+      const snapped = Math.round(val);
+      onChange(snapped);
+    };
     const percentage = ((value - min) / (max - min)) * 100;
     const currentColor = getSliderColor(value, min, max);
-
     const heightClass = size === 'large' ? 'h-4' : 'h-2';
     const thumbSizeClass = size === 'large'
       ? '[&::-webkit-slider-thumb]:w-8 [&::-webkit-slider-thumb]:h-8 [&::-moz-range-thumb]:w-8 [&::-moz-range-thumb]:h-8'
       : '[&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:h-6';
-
-    // Calculate exact pixel offset for the thumb center since the thumb takes up space
-    const thumbOffset = size === 'large' ? 16 : 12; // half width of thumb in px
+    const thumbOffset = size === 'large' ? 16 : 12;
     const offsetPx = thumbOffset - (percentage / 100) * (thumbOffset * 2);
-
     return (
       <div className="relative pt-8 pb-1 w-full group">
         <div
@@ -602,18 +617,20 @@ export default function App() {
             style={{ borderTopColor: currentColor }}
           ></div>
         </div>
+        {/* Dấu chấm tròn các mốc nhỏ nằm đè trên track */}
+
         <input
           type="range"
           min={min}
           max={max}
-          step={step}
+          step={1}
           value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={(e) => handleChange(Number(e.target.value))}
           aria-label={ariaLabel}
           aria-valuemin={min}
           aria-valuemax={max}
           aria-valuenow={value}
-          className={`w-full appearance-none bg-transparent rounded-full cursor-grab active:cursor-grabbing ${heightClass} ${thumbSizeClass} focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-[var(--thumb-color)] [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-[var(--thumb-color)] [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:transition-transform relative z-10`}
+          className={`w-full appearance-none bg-transparent rounded-full cursor-grab active:cursor-grabbing ${heightClass} ${thumbSizeClass} focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-[var(--thumb-color)] [&::-webkit-slider-thumb]:hover:scale-110 [&::-webkit-slider-thumb]:transition-transform [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:shadow-md [&::-moz-range-thumb]:border-4 [&::-moz-range-thumb]:border-[var(--thumb-color)] [&::-moz-range-thumb]:hover:scale-110 [&::-moz-range-thumb]:transition-transform relative z-20`}
           style={{
             background: `linear-gradient(to right, ${currentColor} ${percentage}%, ${isDarkMode ? '#374151' : '#e5e7eb'} ${percentage}%)`,
             '--thumb-color': currentColor,
@@ -626,10 +643,18 @@ export default function App() {
   const renderConsentScreen = () => (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-      className={`relative backdrop-blur-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.2),inset_0_1px_2px_rgba(255,255,255,0.1)] rounded-[2rem] overflow-hidden p-8 md:p-12 max-w-3xl w-full mx-auto text-left ${isDarkMode ? 'bg-[#0b132b]/95 border border-white/10 text-white' : 'bg-white/20 border border-white/40'}`}
+      className={`relative backdrop-blur-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] dark:shadow-[0_16px_48px_rgba(0,0,0,0.2),inset_0_1px_2px_rgba(255,255,255,0.1)] rounded-[2rem] overflow-hidden p-8 md:p-12 max-w-3xl w-full mx-auto text-left ${
+        isDarkMode 
+          ? 'bg-slate-900/95 border-slate-700/50 text-white' 
+          : 'bg-white/90 border-white/60 text-slate-900'
+      }`}
     >
       <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/50 dark:bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 -translate-y-1/2 translate-x-1/2"></div>
-      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-inner border relative z-10 ${isDarkMode ? 'bg-gradient-to-br from-blue-900/50 to-teal-900/50 text-blue-400 border-white/10' : 'bg-gradient-to-br from-blue-100 to-teal-100 text-blue-600 border-white'}`}>
+      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-inner border relative z-10 ${
+        isDarkMode
+          ? 'bg-slate-800/80 border-slate-700 text-blue-400'
+          : 'bg-gradient-to-br from-blue-100 to-teal-100 border-white text-blue-600'
+      }`}>
         <ShieldCheck className="w-8 h-8" />
       </div>
       <h2 className={`text-3xl font-extrabold mb-6 tracking-tight relative z-10 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('consent.title')}</h2>
@@ -662,103 +687,229 @@ export default function App() {
     </motion.div>
   );
 
+  const renderMotivationalScreen = () => (
+    <motion.div
+      key={language}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="relative w-full min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden"
+      style={{ background: 'none' }}
+    >
+      {/* Main Content - Centered */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-6 gap-8 w-full max-w-6xl">
+        {/* Navigation Buttons: fixed to left/right, vertically centered with image */}
+        <div className="w-full flex items-center justify-between relative" style={{ minHeight: '20rem' }}>
+          {/* Previous Button - left edge */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            onClick={() => setShowMotivational(false)}
+            aria-label="Previous"
+            className="w-14 h-14 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-blue-600 dark:text-blue-300 shadow transition-all absolute left-0 top-1/2 -translate-y-1/2"
+            style={{ zIndex: 20 }}
+          >
+            <ArrowLeft className="w-7 h-7" />
+          </motion.button>
+          {/* Large Square Image, centered */}
+          <motion.img
+            src="https://image2url.com/r2/default/images/1775840954764-fa156538-0eec-4fa2-9e18-56d177c85d21.png"
+            alt="Gen Z Motivation"
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="w-80 h-80 rounded-2xl object-cover mx-auto shadow-lg"
+            style={{ background: 'transparent', border: 'none' }}
+          />
+          {/* Next Button - right edge */}
+          <motion.button
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            onClick={proceedToSurvey}
+            aria-label="Next"
+            className="w-14 h-14 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all absolute right-0 top-1/2 -translate-y-1/2"
+            style={{ zIndex: 20 }}
+          >
+            <ArrowRight className="w-7 h-7" />
+          </motion.button>
+        </div>
+        {/* Wide Speech Bubble Quote */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className={`relative px-12 py-8 rounded-[2.5rem] backdrop-blur-md w-full max-w-5xl ${
+            isDarkMode
+              ? 'bg-slate-800/60 border border-slate-700/50 text-white'
+              : 'bg-white/80 border border-white/60 text-slate-900 shadow-xl'
+          }`}
+        >
+          <p className="text-xl leading-relaxed font-medium text-center" style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+            {t('motivational.quote')}
+          </p>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+
   const renderHowItWorksModal = () => (
     <AnimatePresence>
       {isHowItWorksOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-            className={`relative w-full max-w-5xl rounded-[2rem] overflow-hidden p-8 md:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.3)] border ${isDarkMode ? 'bg-[#0b132b]/80 border-white/10 text-white backdrop-blur-3xl' : 'bg-[#0b132b]/95 border-blue-900/50 text-white backdrop-blur-3xl'}`}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => setIsHowItWorksOpen(false)}
-              className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-sm">
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <motion.div
+              key={language}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] ${
+                isDarkMode ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'
+              }`}
             >
-              <span className="text-xl">&times;</span>
-            </button>
+              {/* Fixed Header */}
+              <div className={`sticky top-0 z-10 border-b p-6 flex items-center justify-between ${
+                isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+              }`}>
+                <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                  {t('howItWorks.title')}
+                </h2>
+                <button
+                  onClick={() => setIsHowItWorksOpen(false)}
+                  className={`p-1 rounded-lg transition-colors ${
+                    isDarkMode ? 'hover:bg-gray-700 text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
 
-            <div className="text-center mb-12 max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">{t('tech.title')}</h2>
-              <p className="text-gray-300 text-lg leading-relaxed">{t('tech.subtitle')}</p>
-            </div>
+              {/* Scrollable Content */}
+              <div className="overflow-y-auto flex-1 p-6 space-y-6">
+                {/* Intro */}
+                <p className={`text-lg leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {t('howItWorks.intro')}
+                </p>
 
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              {/* Left Side: 3 Features */}
-              <div className="space-y-8">
-                {/* Feature 1 */}
-                <div className="flex gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/30">
-                    <Activity className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">{t('tech.point1Title')}</h3>
-                    <p className="text-gray-400 leading-relaxed text-sm">{t('tech.point1Text')}</p>
-                  </div>
+                {/* Pillars Section */}
+                <div className="space-y-4">
+                  {[
+                    { key: 'pillar1' },
+                    { key: 'pillar2' },
+                    { key: 'pillar3' },
+                  ].map((item) => (
+                    <div
+                      key={item.key}
+                      className={`p-5 rounded-xl border ${
+                        isDarkMode
+                          ? 'bg-gray-800/50 border-gray-700/50'
+                          : 'bg-gray-50 border-gray-200/50'
+                      }`}
+                    >
+                      <h3 className={`font-bold text-lg mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {t(`howItWorks.${item.key}Title`)}
+                      </h3>
+                      <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {t(`howItWorks.${item.key}Text`)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                {/* Feature 2 */}
-                <div className="flex gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                    <CheckCircle2 className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">{t('tech.point2Title')}</h3>
-                    <p className="text-gray-400 leading-relaxed text-sm">{t('tech.point2Text')}</p>
-                  </div>
+
+                {/* Reliability Stat */}
+                <div className={`p-4 rounded-xl text-center border ${
+                  isDarkMode
+                    ? 'bg-gray-800/50 border-gray-700/50'
+                    : 'bg-gray-50 border-gray-200/50'
+                }`}>
+                  <p className={`font-semibold text-lg ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                    {t('howItWorks.reliability')}
+                  </p>
                 </div>
-                {/* Feature 3 */}
-                <div className="flex gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
-                    <Brain className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">{t('tech.point3Title')}</h3>
-                    <p className="text-gray-400 leading-relaxed text-sm">{t('tech.point3Text')}</p>
+
+                {/* Flowchart Section */}
+                <div className="space-y-3 mt-8">
+                  <h3 className={`font-bold text-lg mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {t('howItWorks.processTitle')}
+                  </h3>
+                  <div className="flex items-center justify-between gap-3">
+                    {/* Step 1 */}
+                    <div className={`flex-1 p-4 rounded-lg text-center border ${
+                      isDarkMode
+                        ? 'bg-gray-800/50 border-gray-700/50'
+                        : 'bg-gray-50 border-gray-200/50'
+                    }`}>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {t('howItWorks.flowStep1')}
+                      </p>
+                    </div>
+
+                    {/* Arrow 1 */}
+                    <div className={`flex-shrink-0 text-2xl ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                      →
+                    </div>
+
+                    {/* Step 2 */}
+                    <div className={`flex-1 p-4 rounded-lg text-center border ${
+                      isDarkMode
+                        ? 'bg-gray-800/50 border-gray-700/50'
+                        : 'bg-gray-50 border-gray-200/50'
+                    }`}>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {t('howItWorks.flowStep2')}
+                      </p>
+                    </div>
+
+                    {/* Arrow 2 */}
+                    <div className={`flex-shrink-0 text-2xl ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                      →
+                    </div>
+
+                    {/* Step 3 */}
+                    <div className={`flex-1 p-4 rounded-lg text-center border ${
+                      isDarkMode
+                        ? 'bg-gray-800/50 border-gray-700/50'
+                        : 'bg-gray-50 border-gray-200/50'
+                    }`}>
+                      <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {t('howItWorks.flowStep3')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Side: Code Mockup */}
-              <div className="bg-[#1e293b] rounded-3xl border border-white/5 overflow-hidden shadow-2xl relative mt-4 lg:mt-0">
-                <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
-
-                {/* Header */}
-                <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
-                  <Lock className="w-4 h-4 text-blue-400" />
-                  <span className="font-semibold text-sm tracking-wide text-gray-200">{t('tech.modelTitle')}</span>
-                </div>
-
-                {/* Code Body */}
-                <div className="p-6 font-mono text-sm overflow-x-auto text-gray-300">
-                  <div className="flex gap-4"><span className="text-blue-400">model</span> <span className="text-gray-400">=</span> <span className="text-emerald-400">XGBClassifier</span><span className="text-gray-400">(</span></div>
-                  <div className="flex gap-4 pl-4"><span className="text-indigo-300">n_estimators</span><span className="text-gray-400">=</span><span className="text-orange-300">200</span><span className="text-gray-400">,</span></div>
-                  <div className="flex gap-4 pl-4"><span className="text-indigo-300">learning_rate</span><span className="text-gray-400">=</span><span className="text-orange-300">0.05</span><span className="text-gray-400">,</span></div>
-                  <div className="flex gap-4 pl-4"><span className="text-indigo-300">max_depth</span><span className="text-gray-400">=</span><span className="text-orange-300">6</span><span className="text-gray-400">,</span></div>
-                  <div className="flex gap-4 pl-4"><span className="text-indigo-300">objective</span><span className="text-gray-400">=</span><span className="text-green-300">'multi:softprob'</span></div>
-                  <div className="flex gap-4"><span className="text-gray-400">)</span></div>
-                  <div className="flex gap-4 mt-6"><span className="text-gray-500 italic">/* {t('ui.predictionOutput')}: LOW, MEDIUM, HIGH */</span></div>
-                </div>
-
-                {/* Footer Stats */}
-                <div className="px-6 py-5 border-t border-white/5 flex items-center justify-between bg-black/20">
-                  <span className="text-sm font-medium text-gray-400">{t('tech.modelAcc')}</span>
-                  <div className="bg-emerald-500/20 text-emerald-400 font-mono font-bold px-3 py-1 rounded text-sm border border-emerald-500/30">
-                    92.4%
-                  </div>
-                </div>
+              {/* Fixed Footer */}
+              <div className={`sticky bottom-0 border-t p-4 bg-gradient-to-r ${
+                isDarkMode
+                  ? 'border-gray-700 from-gray-800 to-gray-800'
+                  : 'border-gray-200 from-gray-50 to-gray-50'
+              }`}>
+                <button
+                  onClick={() => setIsHowItWorksOpen(false)}
+                  className={`w-full py-3 rounded-lg font-semibold transition-colors ${
+                    isDarkMode
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                      : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                  }`}
+                >
+                  {t('howItWorks.close')}
+                </button>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       )}
     </AnimatePresence>
   );
+
+
 
   const renderEmergencyModal = () => (
     <AnimatePresence>
       {showEmergencyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
           <motion.div
+            key={language}
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
             className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-lg w-full text-center ${isDarkMode ? 'bg-[#0b132b]/80 border-white/10' : 'bg-white/95 border border-gray-200'}`}
           >
@@ -800,10 +951,62 @@ export default function App() {
     </AnimatePresence>
   );
 
+  const renderLoginConfirmModal = () => (
+    <AnimatePresence>
+      {showLoginConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className={`relative backdrop-blur-3xl shadow-2xl rounded-[2rem] p-8 max-w-md w-full text-center ${
+              isDarkMode ? 'bg-slate-900/90 border border-white/10 text-white' : 'bg-white/95 border border-slate-200 text-slate-900'
+            }`}
+          >
+            <h3 className="text-2xl font-bold mb-4">Lợi ích khi Đăng nhập</h3>
+            <div className={`text-left space-y-4 mb-8 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              <p className="font-medium text-center opacity-90">Đăng nhập để mở khóa các tính năng nâng cao giúp bạn quản lý sức khỏe tốt hơn:</p>
+              <ul className="space-y-4 text-sm">
+                <li className="flex items-start gap-3">
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span><strong>Theo dõi lịch sử:</strong> Xem lại lịch sử làm khảo sát và theo dõi biểu đồ xu hướng căng thẳng qua từng mốc thời gian.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span><strong>AI Cá nhân hóa:</strong> Hệ thống ghi nhớ thói quen sinh hoạt để đưa ra gợi ý và lộ trình phục hồi chính xác hơn.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                  <span><strong>Gợi ý thông minh:</strong> Nhận các chỉ dẫn tốt hơn cho các vấn đề tâm lý dựa trên dữ liệu thói quen đã lưu trữ.</span>
+                </li>
+              </ul>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleConfirmLogin}
+                className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30"
+              >
+                Tiếp tục đăng nhập
+              </button>
+              <button
+                onClick={handleCancelLogin}
+                className={`w-full py-3 rounded-xl font-semibold transition-all ${
+                  isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Để sau
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+
   const renderStepContent = () => {
     const questionCardClass = `space-y-4 rounded-[2rem] p-6 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`;
     const questionLabelClass = `block text-base font-bold ${isDarkMode ? 'text-gray-200' : 'text-slate-800'}`;
-    const textHintClass = `text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`;
+    const textHintClass = `text-xs font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`;
     const inputClass = `w-full p-4 rounded-2xl border-2 focus:outline-none focus:ring-4 transition-all font-medium ${isDarkMode ? 'bg-[#0b132b]/60 border-white/15 text-white focus:border-blue-500 focus:ring-blue-500/20' : 'bg-white/90 border-slate-100 text-slate-700 focus:border-blue-500 focus:ring-blue-500/10'}`;
     const selectClass = `w-full p-4 rounded-2xl border-2 appearance-none focus:outline-none focus:ring-4 transition-all font-medium ${isDarkMode ? 'bg-[#0b132b]/60 border-white/15 text-white focus:border-blue-500 focus:ring-blue-500/20' : 'bg-white/90 border-slate-100 text-slate-700 focus:border-blue-500 focus:ring-blue-500/10'}`;
     const choiceButtonClass = (selected: boolean) => (
@@ -864,152 +1067,22 @@ export default function App() {
         );
       case 2:
         return (
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 relative">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-10">
             <h2 className={`text-2xl font-extrabold mb-2 tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('questions.s2Title')}</h2>
-            <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-              Complete the recommended assessments to enable accurate scoring.
-            </p>
-
-            <div className="hidden xl:block">
-              <AnimatePresence>
-                {leftAssessmentPanel && (
-                  <motion.aside
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className={`absolute top-0 -left-[355px] w-[320px] h-[540px] rounded-[1.75rem] border p-4 shadow-[0_16px_50px_rgba(0,0,0,0.12)] overflow-hidden ${isDarkMode ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-slate-200'}`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={`text-sm font-extrabold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                        {leftAssessmentPanel === 'gad' ? 'GAD-7 (0-21)' : 'PHQ-9 (0-27)'}
-                      </div>
-                      <button onClick={() => setLeftAssessmentPanel(null)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className={`text-xs mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                      Over the last 2 weeks, how often have you been bothered by the following?
-                    </div>
-                    <div className={`text-xs mb-3 font-semibold ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
-                      {leftAssessmentPanel === 'gad' ? `${gadAnsweredCount}/7 answered` : `${phqAnsweredCount}/9 answered`}
-                    </div>
-                    <div className="h-[430px] overflow-y-auto pr-1 space-y-3">
-                      {(leftAssessmentPanel === 'gad' ? GAD_QUESTIONS : PHQ_QUESTIONS).map((q) => {
-                        const selected = leftAssessmentPanel === 'gad' ? gadAnswers[q.id] : phqAnswers[q.id];
-                        return (
-                          <div key={`${leftAssessmentPanel}-${q.id}`} className={`rounded-xl p-3 border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{q.id}. {q.text}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              {GAD_SCALE.map((scale) => (
-                                <button
-                                  key={scale.value}
-                                  onClick={() => handleAssessmentAnswer(leftAssessmentPanel, q.id, scale.value)}
-                                  className={`text-[11px] px-2 py-1.5 rounded-lg border text-left ${selected === scale.value
-                                      ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-600 text-white border-blue-600')
-                                      : (isDarkMode ? 'bg-white/5 text-slate-300 border-white/15 hover:bg-white/10' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300')
-                                    }`}
-                                >
-                                  {scale.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.aside>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <div className="hidden xl:block">
-              <AnimatePresence>
-                {isRosenbergPanelOpen && (
-                  <motion.aside
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className={`absolute top-0 -right-[355px] w-[320px] h-[540px] rounded-[1.75rem] border p-4 shadow-[0_16px_50px_rgba(0,0,0,0.12)] overflow-hidden ${isDarkMode ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-slate-200'}`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={`text-sm font-extrabold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>Rosenberg (0-30)</div>
-                      <button onClick={() => setIsRosenbergPanelOpen(false)} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className={`text-xs mb-3 font-semibold ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
-                      {rosenbergAnsweredCount}/10 answered
-                    </div>
-                    <div className="h-[468px] overflow-y-auto pr-1 space-y-3">
-                      {ROSENBERG_QUESTIONS.map((q) => {
-                        const selected = rosenbergAnswers[q.id];
-                        return (
-                          <div key={`rosenberg-${q.id}`} className={`rounded-xl p-3 border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{q.id}. {q.text}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              {ROSENBERG_SCALE.map((scale) => (
-                                <button
-                                  key={scale.value}
-                                  onClick={() => handleAssessmentAnswer('rosenberg', q.id, scale.value)}
-                                  className={`text-[11px] px-2 py-1.5 rounded-lg border text-left ${selected === scale.value
-                                      ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-600 text-white border-blue-600')
-                                      : (isDarkMode ? 'bg-white/5 text-slate-300 border-white/15 hover:bg-white/10' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300')
-                                    }`}
-                                >
-                                  {scale.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.aside>
-                )}
-              </AnimatePresence>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className={questionCardClass}>
-                <div className="flex items-start justify-between gap-2">
-                  <label className={questionLabelClass}>{t('questions.q7')}</label>
-                  <div className="relative group">
-                    <CircleHelp className={`w-4 h-4 mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
-                    <div className={`pointer-events-none absolute right-0 top-6 z-20 w-56 rounded-xl p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-slate-900 text-slate-200 border border-white/10' : 'bg-white text-slate-700 border border-slate-200'}`}>
-                      GAD-7 anxiety screener for the last 2 weeks.
-                      <button type="button" onClick={() => setLeftAssessmentPanel('gad')} className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 text-white px-2 py-1.5 text-[11px] font-semibold hover:bg-blue-700">Take test</button>
-                    </div>
-                  </div>
-                </div>
-                <CustomSlider min={0} max={21} step={1} value={formData.anxiety_level} onChange={(v) => handleInputChange('anxiety_level', v)} ariaLabel="Anxiety" />
+                <label className={questionLabelClass}>{t('questions.q7')}</label>
+                <CustomSlider min={0} max={21} step={1} value={formData.anxiety_level} onChange={(v) => handleInputChange('anxiety_level', v)} ariaLabel="Anxiety" showDots={false} />
                 <div className={`flex justify-between ${textHintClass}`}><span>0</span><span>21</span></div>
               </div>
               <div className={questionCardClass}>
-                <div className="flex items-start justify-between gap-2">
-                  <label className={questionLabelClass}>{t('questions.q8')}</label>
-                  <div className="relative group">
-                    <CircleHelp className={`w-4 h-4 mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
-                    <div className={`pointer-events-none absolute right-0 top-6 z-20 w-56 rounded-xl p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-slate-900 text-slate-200 border border-white/10' : 'bg-white text-slate-700 border border-slate-200'}`}>
-                      PHQ-9 mood and depression screener for the last 2 weeks.
-                      <button type="button" onClick={() => setLeftAssessmentPanel('phq')} className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 text-white px-2 py-1.5 text-[11px] font-semibold hover:bg-blue-700">Take test</button>
-                    </div>
-                  </div>
-                </div>
-                <CustomSlider min={0} max={27} step={1} value={formData.depression} onChange={(v) => handleInputChange('depression', v)} ariaLabel="Depression" />
+                <label className={questionLabelClass}>{t('questions.q8')}</label>
+                <CustomSlider min={0} max={27} step={1} value={formData.depression} onChange={(v) => handleInputChange('depression', v)} ariaLabel="Depression" showDots={false} />
                 <div className={`flex justify-between ${textHintClass}`}><span>0</span><span>27</span></div>
               </div>
               <div className={questionCardClass}>
-                <div className="flex items-start justify-between gap-2">
-                  <label className={questionLabelClass}>{t('questions.q9')}</label>
-                  <div className="relative group">
-                    <CircleHelp className={`w-4 h-4 mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} />
-                    <div className={`pointer-events-none absolute right-0 top-6 z-20 w-56 rounded-xl p-3 text-xs shadow-xl opacity-0 group-hover:opacity-100 transition-opacity ${isDarkMode ? 'bg-slate-900 text-slate-200 border border-white/10' : 'bg-white text-slate-700 border border-slate-200'}`}>
-                      Rosenberg self-esteem scale with reverse-scored statements.
-                      <button type="button" onClick={() => setIsRosenbergPanelOpen(true)} className="pointer-events-auto mt-2 w-full rounded-lg bg-blue-600 text-white px-2 py-1.5 text-[11px] font-semibold hover:bg-blue-700">Take test</button>
-                    </div>
-                  </div>
-                </div>
-                <CustomSlider min={0} max={30} step={1} value={formData.self_esteem} onChange={(v) => handleInputChange('self_esteem', v)} ariaLabel="Self Esteem" />
+                <label className={questionLabelClass}>{t('questions.q9')}</label>
+                <CustomSlider min={0} max={30} step={1} value={formData.self_esteem} onChange={(v) => handleInputChange('self_esteem', v)} ariaLabel="Self Esteem" showDots={false} />
                 <div className={`flex justify-between ${textHintClass}`}><span>0</span><span>30</span></div>
               </div>
               <div className={questionCardClass}>
@@ -1024,59 +1097,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-
-            <div className={`rounded-2xl px-4 py-3 border ${isDarkMode ? 'bg-slate-900/70 border-white/10 text-slate-300' : 'bg-white/70 border-slate-200 text-slate-700'}`}>
-              <div className="text-xs font-semibold mb-1">Assessment summary</div>
-              <div className="text-xs">GAD-7: {gadAnsweredCount === 7 ? `${gadScore}/21` : '--'} | PHQ-9: {phqAnsweredCount === 9 ? `${phqScore}/27` : '--'} | Rosenberg: {rosenbergAnsweredCount === 10 ? `${rosenbergScore}/30` : '--'}</div>
-              <div className={`text-[11px] mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Scores are shown only after a test is completed.</div>
-            </div>
-
-            <AnimatePresence>
-              {(leftAssessmentPanel || isRosenbergPanelOpen) && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/50 p-4 xl:hidden overflow-y-auto">
-                  <div className={`mx-auto mt-8 w-full max-w-xl rounded-2xl p-4 border ${isDarkMode ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}>
-                        {leftAssessmentPanel === 'gad' ? 'GAD-7 (0-21)' : leftAssessmentPanel === 'phq' ? 'PHQ-9 (0-27)' : 'Rosenberg (0-30)'}
-                      </div>
-                      <button onClick={() => { setLeftAssessmentPanel(null); setIsRosenbergPanelOpen(false); }} className={`p-2 rounded-full ${isDarkMode ? 'hover:bg-white/10 text-slate-300' : 'hover:bg-slate-100 text-slate-500'}`}>
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-                      {(leftAssessmentPanel === 'gad' ? GAD_QUESTIONS : leftAssessmentPanel === 'phq' ? PHQ_QUESTIONS : ROSENBERG_QUESTIONS).map((q) => {
-                        const selected = leftAssessmentPanel === 'gad'
-                          ? gadAnswers[q.id]
-                          : leftAssessmentPanel === 'phq'
-                            ? phqAnswers[q.id]
-                            : rosenbergAnswers[q.id];
-                        const scaleSet = (!leftAssessmentPanel && isRosenbergPanelOpen) ? ROSENBERG_SCALE : GAD_SCALE;
-                        const testKey: 'gad' | 'phq' | 'rosenberg' = leftAssessmentPanel === 'gad' ? 'gad' : leftAssessmentPanel === 'phq' ? 'phq' : 'rosenberg';
-                        return (
-                          <div key={`mobile-assessment-${q.id}`} className={`rounded-xl p-3 border ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                            <p className={`text-xs mb-2 ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>{q.id}. {q.text}</p>
-                            <div className="grid grid-cols-2 gap-2">
-                              {scaleSet.map((scale) => (
-                                <button
-                                  key={scale.value}
-                                  onClick={() => handleAssessmentAnswer(testKey, q.id, scale.value)}
-                                  className={`text-[11px] px-2 py-1.5 rounded-lg border text-left ${selected === scale.value
-                                      ? (isDarkMode ? 'bg-blue-600 text-white border-blue-500' : 'bg-blue-600 text-white border-blue-600')
-                                      : (isDarkMode ? 'bg-white/5 text-slate-300 border-white/15 hover:bg-white/10' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300')
-                                    }`}
-                                >
-                                  {scale.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </motion.div>
         );
       case 3:
@@ -1176,13 +1196,13 @@ export default function App() {
     const formatTop = (count: number) =>
       sorted
         .slice(0, count)
-        .map((item) => `${item.feature} (${Math.round(item.importance)}%)`)
+        .map((item) => `${getFeatureLabel(item.feature)} (${Math.round(item.importance)}%)`)
         .join(', ');
 
     const levelLabel = t(`results.${result.stress_level.toLowerCase()}`);
     const confidencePct = Math.round(result.confidence_score * 100);
-    const primary = sorted[0]?.feature;
-    const secondary = sorted[1]?.feature;
+    const primary = getFeatureLabel(String(sorted[0]?.feature || ''));
+    const secondary = getFeatureLabel(String(sorted[1]?.feature || ''));
 
     switch (language) {
       case 'en':
@@ -1207,7 +1227,7 @@ export default function App() {
         };
       default:
         return {
-          trends: `Mức stress hiện tại: ${levelLabel} (độ tin cậy ${confidencePct}%). Xu hướng chính: ${formatTop(3)}.`,
+          trends: `Mức stress hiện tại: ${levelLabel} (độ chính xác ${confidencePct}%). Xu hướng chính: ${formatTop(3)}.`,
           touchpoints: `Các yếu tố ảnh hưởng mạnh nhất: ${formatTop(2)}. Ưu tiên theo dõi ${primary}${secondary ? ` và ${secondary}` : ''}.`
         };
     }
@@ -1221,12 +1241,24 @@ export default function App() {
     const social = Math.round(((Number(formData.social_support) / 3 + Number(formData.extracurricular_activities) / 5) / 2) * 100);
     const finance = Math.round(((Number(formData.basic_needs) + Number(formData.living_conditions)) / 10) * 100);
     const exercise = Math.round(((Number(formData.extracurricular_activities) / 5 * 0.6) + ((5 - Number(formData.headache)) / 5 * 0.4)) * 100);
+
+    const getRadarLabel = (cat: string) => {
+      const radMap: any = {
+        en: { study: "Study", sleep: "Sleep", social: "Social", finance: "Finance", exercise: "Exercise" },
+        vi: { study: "Học tập", sleep: "Giấc ngủ", social: "Xã hội", finance: "Tài chính", exercise: "Thể chất" },
+        fr: { study: "Études", sleep: "Sommeil", social: "Social", finance: "Finance", exercise: "Exercice" },
+        de: { study: "Studium", sleep: "Schlaf", social: "Soziales", finance: "Finanzen", exercise: "Sport" },
+        zh: { study: "学习", sleep: "睡眠", social: "社交", finance: "财务", exercise: "运动" }
+      };
+      return radMap[language]?.[cat] || radMap.en[cat];
+    };
+
     return [
-      { subject: 'Study', value: Math.min(100, Math.max(5, study)), fullMark: 100 },
-      { subject: 'Sleep', value: Math.min(100, Math.max(5, sleep)), fullMark: 100 },
-      { subject: 'Social', value: Math.min(100, Math.max(5, social)), fullMark: 100 },
-      { subject: 'Finance', value: Math.min(100, Math.max(5, finance)), fullMark: 100 },
-      { subject: 'Exercise', value: Math.min(100, Math.max(5, exercise)), fullMark: 100 },
+      { subject: getRadarLabel('study'), value: Math.min(100, Math.max(5, study)), fullMark: 100 },
+      { subject: getRadarLabel('sleep'), value: Math.min(100, Math.max(5, sleep)), fullMark: 100 },
+      { subject: getRadarLabel('social'), value: Math.min(100, Math.max(5, social)), fullMark: 100 },
+      { subject: getRadarLabel('finance'), value: Math.min(100, Math.max(5, finance)), fullMark: 100 },
+      { subject: getRadarLabel('exercise'), value: Math.min(100, Math.max(5, exercise)), fullMark: 100 },
     ];
   };
 
@@ -1273,7 +1305,7 @@ export default function App() {
 
   const buildPeerData = () => [
     {
-      label: 'Sleep Hours',
+      label: getFeatureLabel('sleep_quality'),
       you: Math.round((Number(formData.sleep_quality) / 5) * 10),
       avg: 7,
       unit: 'hrs',
@@ -1281,7 +1313,7 @@ export default function App() {
       avgPct: 70,
     },
     {
-      label: 'Study Load',
+      label: getFeatureLabel('study_load'),
       you: Number(formData.study_load),
       avg: 3,
       unit: '/5',
@@ -1289,7 +1321,7 @@ export default function App() {
       avgPct: 60,
     },
     {
-      label: 'Social Activity',
+      label: getFeatureLabel('social_support'),
       you: Number(formData.social_support),
       avg: 2,
       unit: '/3',
@@ -1297,7 +1329,7 @@ export default function App() {
       avgPct: 65,
     },
     {
-      label: 'Exercise Score',
+      label: getFeatureLabel('extracurricular_activities'),
       you: Number(formData.extracurricular_activities),
       avg: 3,
       unit: '/5',
@@ -1305,7 +1337,7 @@ export default function App() {
       avgPct: 60,
     },
     {
-      label: 'Basic Needs',
+      label: getFeatureLabel('basic_needs'),
       you: Number(formData.basic_needs),
       avg: 4,
       unit: '/5',
@@ -1352,7 +1384,7 @@ export default function App() {
     const trendData = buildStressTrendData();
     const calendar = buildCalendarData();
     const peerData = buildPeerData();
-    const localeMap = { vi: 'vi-VN', en: 'en-US', fr: 'fr-FR', de: 'de-DE', zh: 'zh-CN' } as const;
+    const localeMap: Record<string, string> = { vi: 'vi-VN', en: 'en-US', fr: 'fr-FR', de: 'de-DE', zh: 'zh-CN' };
     const monthName = new Date(calendar.year, calendar.month).toLocaleString(localeMap[language], { month: 'long', year: 'numeric' });
     const dayLabels = [t('ui.calendar.mon'), t('ui.calendar.tue'), t('ui.calendar.wed'), t('ui.calendar.thu'), t('ui.calendar.fri'), t('ui.calendar.sat'), t('ui.calendar.sun')];
     const stressColors = [
@@ -1503,14 +1535,14 @@ export default function App() {
                 <button
                   onClick={() => setStressTrendPeriod('weekly')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${stressTrendPeriod === 'weekly'
-                      ? (isDarkMode ? 'bg-teal-500/20 text-teal-300' : 'bg-teal-600/10 text-teal-700')
-                      : (isDarkMode ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100/70')
+                    ? (isDarkMode ? 'bg-teal-500/20 text-teal-300' : 'bg-teal-600/10 text-teal-700')
+                    : (isDarkMode ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100/70')
                     }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.weekly')}</button>
                 <button
                   onClick={() => setStressTrendPeriod('monthly')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all ${stressTrendPeriod === 'monthly'
-                      ? (isDarkMode ? 'bg-teal-500/20 text-teal-300' : 'bg-teal-600/10 text-teal-700')
-                      : (isDarkMode ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100/70')
+                    ? (isDarkMode ? 'bg-teal-500/20 text-teal-300' : 'bg-teal-600/10 text-teal-700')
+                    : (isDarkMode ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100/70')
                     }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.monthly')}</button>
               </div>
             </div>
@@ -1612,9 +1644,9 @@ export default function App() {
                     key={`day-${day}`}
                     className="aspect-square rounded-lg transition-transform hover:scale-110 relative flex items-center justify-center"
                     style={{ backgroundColor: bgColor, cursor: 'default' }}
-                      title={`${t('ui.day')} ${day}: ${stressLevel === 0 ? t('ui.noData') :
-                        stressLevel === 1 ? t('ui.lowStress') :
-                          stressLevel === 2 ? t('ui.mediumStress') : t('ui.highStress')
+                    title={`${t('ui.day')} ${day}: ${stressLevel === 0 ? t('ui.noData') :
+                      stressLevel === 1 ? t('ui.lowStress') :
+                        stressLevel === 2 ? t('ui.mediumStress') : t('ui.highStress')
                       }`}
                   >
                     {today && (
@@ -1671,8 +1703,8 @@ export default function App() {
                     style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{item.label}</span>
                   <div className="flex items-center gap-3">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.youPct >= item.avgPct
-                        ? (isDarkMode ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-600/10 text-teal-700')
-                        : (isDarkMode ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-50 text-purple-700')
+                      ? (isDarkMode ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-600/10 text-teal-700')
+                      : (isDarkMode ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-50 text-purple-700')
                       }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
                       You: {item.you}{item.unit}
                     </span>
@@ -1822,14 +1854,31 @@ export default function App() {
     return cards;
   };
 
+  // Map from backend i18n_key to frontend translation key pairs
+  const backendI18nMap: Record<string, { titleKey: string; descKey: string }> = {
+    highStress: { titleKey: 'results.actionCards.highStressTitle', descKey: 'results.actionCards.highStressDesc' },
+    sleep: { titleKey: 'results.actionCards.sleepTitle', descKey: 'results.actionCards.sleepDesc' },
+    studyLoad: { titleKey: 'results.actionCards.studyLoadTitle', descKey: 'results.actionCards.studyLoadDesc' },
+    anxiety: { titleKey: 'results.actionCards.anxietyTitle', descKey: 'results.actionCards.anxietyDesc' },
+    mood: { titleKey: 'results.actionCards.moodTitle', descKey: 'results.actionCards.moodDesc' },
+    support: { titleKey: 'results.actionCards.supportTitle', descKey: 'results.actionCards.supportDesc' },
+    bullying: { titleKey: 'results.actionCards.bullyingTitle', descKey: 'results.actionCards.bullyingDesc' },
+    needs: { titleKey: 'results.actionCards.needsTitle', descKey: 'results.actionCards.needsDesc' },
+    weekPlan: { titleKey: 'results.actionCards.weekPlanTitle', descKey: 'results.actionCards.weekPlanDesc' },
+  };
+
   const actionCards: ActionCardItem[] = aiResult
     ? (() => {
-      const base = aiResult.recommendations.map((rec) => ({
-        id: rec.id,
-        title: rec.title,
-        description: rec.description,
-        categoryKey: (rec as any).categoryKey || 'general'
-      }));
+      const base = aiResult.recommendations.map((rec: any) => {
+        const i18nKey = rec.i18n_key as string | undefined;
+        const mapped = i18nKey ? backendI18nMap[i18nKey] : undefined;
+        return {
+          id: `backend-${rec.reco_id ?? rec.i18n_key ?? Math.random()}`,
+          categoryKey: rec.category || 'general',
+          title: mapped ? t(mapped.titleKey) : rec.title,
+          description: mapped ? t(mapped.descKey) : rec.description,
+        };
+      });
       const personalized = buildPersonalizedActionCards(aiResult, formData);
       const merged: ActionCardItem[] = [];
       const seen = new Set<string>();
@@ -1842,8 +1891,9 @@ export default function App() {
     })()
     : [];
 
+
   return (
-    <div className={`min-h-screen font-sans text-[#0b132b] relative overflow-x-hidden transition-colors duration-500 ${isDarkMode ? 'dark bg-gradient-to-br from-[#020510] via-[#0a0f1e] to-[#0d1b3e]' : 'bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100'}`}>
+    <div className={`min-h-screen font-sans text-slate-900 dark:text-slate-100 relative overflow-x-hidden transition-colors duration-500 ${isDarkMode ? 'dark bg-gradient-to-br from-[#020510] via-[#0a0f1e] to-[#0d1b3e]' : 'bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100'}`}>
       {/* Liquid Glass Background Blobs */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         {isDarkMode ? (
@@ -1869,125 +1919,152 @@ export default function App() {
           }`}>
           {/* Light mode: floating glass pill wrapper */}
           <div className={`flex items-center justify-between w-full transition-all duration-500 ${isDarkMode
-              ? ''
-              : 'bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-full px-5 py-2'
+            ? ''
+            : 'bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-full px-5 py-2'
             }`}>
             <div className="flex items-center gap-8 min-w-0">
               <div className={`text-xl font-bold tracking-tight cursor-pointer transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`} onClick={() => { setIsSurveyOpen(false); setIsCompleted(false); setCurrentStep(1); }}>{t('appName')}</div>
               {!isSurveyOpen && (
                 <nav className={`hidden md:flex items-center gap-6 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-slate-800'}`}>
                   <a href="#solutions" className={`transition-colors ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-slate-900 hover:text-blue-700'}`}>{t('nav.solutions')}</a>
-                  <a href="#technology" className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-blue-700'}`}>{t('nav.technology')}</a>
+                  <button onClick={() => setShowTechnologyModal(true)} className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-blue-700'}`}>{t('nav.technology')}</button>
                 </nav>
               )}
             </div>
 
+
+
             <div className="flex items-center gap-3">
-              {!isSurveyOpen && (
-                <>
-                  {/* Premium Dark / Light Mode Toggle */}
+              {/* Premium Dark / Light Mode Toggle */}
+              <motion.div
+                className="relative hidden sm:flex w-[130px] h-[43px] rounded-full border-2 border-white/60 cursor-pointer overflow-hidden items-center shrink-0 shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_2px_4px_4px_2px_rgba(2,1,68,0.5),inset_-2px_-2px_2px_rgba(1,0,89,0.5)]"
+                animate={{ backgroundColor: isDarkMode ? '#0f172a' : '#236fe9' }}
+                transition={{ duration: 0.5 }}
+                onClick={() => setIsDarkMode(prev => !prev)}
+                aria-label={t('ui.toggleDarkMode')}
+              >
+                {/* Stars Lottie (dark mode) */}
+                <motion.div
+                  className="absolute left-0 top-0 w-full h-full pointer-events-none z-0"
+                  animate={{ opacity: isDarkMode ? 1 : 0, y: isDarkMode ? 0 : 20 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Player autoplay style={{ width: '100%', height: '100%' }} loop src="https://cdn.prod.website-files.com/6485b1e6f5eb4dc9ec89e560/6485bab4d8da4bb319001bbe_stars.json" />
+                </motion.div>
+                {/* Clouds Lottie base (light mode) */}
+                <motion.div
+                  className="absolute pointer-events-none z-0"
+                  style={{ width: '140%', height: '200%', left: '-20%', top: '-50%' }}
+                  animate={{ opacity: isDarkMode ? 0 : 0.9 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <Player autoplay speed={1.5} style={{ width: '100%', height: '100%' }} loop src="https://cdn.prod.website-files.com/6485b1e6f5eb4dc9ec89e560/6485bab50719867ec6c32ff9_clouds.json" />
+                </motion.div>
+                {/* Static Clouds (light mode) */}
+                <motion.div
+                  className="absolute bottom-[-20px] left-[-20%] w-[140%] h-[110px] flex flex-col items-center justify-end pointer-events-none z-0"
+                  animate={{ y: isDarkMode ? 60 : 0, opacity: isDarkMode ? 0 : 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <motion.img
+                    src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed6_Vectors-Wrapper.svg"
+                    className="w-[180px] h-[66px] object-cover absolute bottom-[-8px]"
+                    animate={{ x: [-10, 10, -10] }}
+                    transition={{ repeat: Infinity, duration: 5.33, ease: 'easeInOut' }}
+                    alt=""
+                  />
+                  <motion.img
+                    src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed5_Vectors-Wrapper.svg"
+                    className="w-[180px] h-[66px] object-cover absolute bottom-[8px]"
+                    animate={{ x: [10, -10, 10] }}
+                    transition={{ repeat: Infinity, duration: 6.67, ease: 'easeInOut' }}
+                    alt=""
+                  />
+                </motion.div>
+                {/* Ripple rings */}
+                <motion.div
+                  className="absolute pointer-events-none z-0"
+                  style={{ left: '22px', top: '50%' }}
+                  animate={{ x: isDarkMode ? 88 : 0 }}
+                  transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                >
+                  <div className="absolute w-[70px] h-[70px] bg-white/10 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                  <div className="absolute w-[110px] h-[110px] bg-white/10 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                  <div className="absolute w-[150px] h-[150px] bg-white/10 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
+                </motion.div>
+                {/* Glow (moves with thumb) */}
+                <motion.div
+                  className="absolute flex items-center justify-center mix-blend-screen pointer-events-none z-0"
+                  style={{ left: '-50px', top: '50%', transform: 'translateY(-50%)' }}
+                  animate={{ x: isDarkMode ? 88 : 0 }}
+                  transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                >
+                  <motion.img src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed3_Vectors-Wrapper.svg" className="absolute w-[85px] h-[85px] object-cover" animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }} alt="" />
+                  <motion.img src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed2_Vectors-Wrapper.svg" className="absolute w-[114px] h-[114px] object-cover" animate={{ scale: [1, 1.05, 1], opacity: [0.6, 0.8, 0.6] }} transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut', delay: 0.5 }} alt="" />
+                  <motion.img src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed4_Vectors-Wrapper.svg" className="absolute w-[142px] h-[142px] object-cover" animate={{ scale: [1, 1.02, 1], opacity: [0.4, 0.6, 0.4] }} transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1 }} alt="" />
+                </motion.div>
+                {/* Thumb: Sun / Moon */}
+                <div className="absolute inset-0 flex items-center px-[8px] pointer-events-none z-10">
                   <motion.div
-                    className="relative w-[130px] h-[43px] rounded-full border-2 border-white/60 cursor-pointer overflow-hidden flex items-center shrink-0 shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_2px_4px_4px_2px_rgba(2,1,68,0.5),inset_-2px_-2px_2px_rgba(1,0,89,0.5)]"
-                    animate={{ backgroundColor: isDarkMode ? '#0f172a' : '#236fe9' }}
-                    transition={{ duration: 0.5 }}
-                    onClick={() => setIsDarkMode(prev => !prev)}
-                    aria-label={t('ui.toggleDarkMode')}
+                    className="relative w-[29px] h-[29px] rounded-full flex items-center justify-center"
+                    animate={{ x: isDarkMode ? 88 : 0, rotate: isDarkMode ? 360 : 0 }}
+                    transition={{ type: 'spring', stiffness: 100, damping: 20 }}
                   >
-                    {/* Stars Lottie (dark mode) */}
-                    <motion.div
-                      className="absolute left-0 top-0 w-full h-full pointer-events-none z-0"
-                      animate={{ opacity: isDarkMode ? 1 : 0, y: isDarkMode ? 0 : 20 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <Player autoplay loop src="https://cdn.prod.website-files.com/6485b1e6f5eb4dc9ec89e560/6485bab4d8da4bb319001bbe_stars.json" style={{ width: '100%', height: '100%' }} />
-                    </motion.div>
-                    {/* Clouds Lottie base (light mode) */}
-                    <motion.div
-                      className="absolute pointer-events-none z-0"
-                      style={{ width: '140%', height: '200%', left: '-20%', top: '-50%' }}
-                      animate={{ opacity: isDarkMode ? 0 : 0.9 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <Player autoplay loop speed={1.5} src="https://cdn.prod.website-files.com/6485b1e6f5eb4dc9ec89e560/6485bab50719867ec6c32ff9_clouds.json" style={{ width: '100%', height: '100%' }} />
-                    </motion.div>
-                    {/* Static Clouds (light mode) */}
-                    <motion.div
-                      className="absolute bottom-[-20px] left-[-20%] w-[140%] h-[110px] flex flex-col items-center justify-end pointer-events-none z-0"
-                      animate={{ y: isDarkMode ? 60 : 0, opacity: isDarkMode ? 0 : 1 }}
-                      transition={{ duration: 0.5 }}
-                    >
-                      <motion.img
-                        src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed6_Vectors-Wrapper.svg"
-                        className="w-[180px] h-[66px] object-cover absolute bottom-[-8px]"
-                        animate={{ x: [-10, 10, -10] }}
-                        transition={{ repeat: Infinity, duration: 5.33, ease: 'easeInOut' }}
-                        alt=""
-                      />
-                      <motion.img
-                        src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed5_Vectors-Wrapper.svg"
-                        className="w-[180px] h-[66px] object-cover absolute bottom-[8px]"
-                        animate={{ x: [10, -10, 10] }}
-                        transition={{ repeat: Infinity, duration: 6.67, ease: 'easeInOut' }}
-                        alt=""
-                      />
-                    </motion.div>
-                    {/* Ripple rings */}
-                    <motion.div
-                      className="absolute pointer-events-none z-0"
-                      style={{ left: '22px', top: '50%' }}
-                      animate={{ x: isDarkMode ? 88 : 0 }}
-                      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                    >
-                      <div className="absolute w-[70px] h-[70px] bg-white/10 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
-                      <div className="absolute w-[110px] h-[110px] bg-white/10 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
-                      <div className="absolute w-[150px] h-[150px] bg-white/10 rounded-full" style={{ transform: 'translate(-50%, -50%)' }} />
-                    </motion.div>
-                    {/* Glow (moves with thumb) */}
-                    <motion.div
-                      className="absolute flex items-center justify-center mix-blend-screen pointer-events-none z-0"
-                      style={{ left: '-50px', top: '50%', transform: 'translateY(-50%)' }}
-                      animate={{ x: isDarkMode ? 88 : 0 }}
-                      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                    >
-                      <motion.img src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed3_Vectors-Wrapper.svg" className="absolute w-[85px] h-[85px] object-cover" animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }} alt="" />
-                      <motion.img src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed2_Vectors-Wrapper.svg" className="absolute w-[114px] h-[114px] object-cover" animate={{ scale: [1, 1.05, 1], opacity: [0.6, 0.8, 0.6] }} transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut', delay: 0.5 }} alt="" />
-                      <motion.img src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed4_Vectors-Wrapper.svg" className="absolute w-[142px] h-[142px] object-cover" animate={{ scale: [1, 1.02, 1], opacity: [0.4, 0.6, 0.4] }} transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 1 }} alt="" />
-                    </motion.div>
-                    {/* Thumb: Sun / Moon */}
-                    <div className="absolute inset-0 flex items-center px-[8px] pointer-events-none z-10">
-                      <motion.div
-                        className="relative w-[29px] h-[29px] rounded-full flex items-center justify-center"
-                        animate={{ x: isDarkMode ? 88 : 0, rotate: isDarkMode ? 360 : 0 }}
-                        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                      >
-                        <motion.img
-                          src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed0_Vectors-Wrapper.svg"
-                          className="absolute w-[29px] h-[29px] rounded-full shadow-[4px_8px_6px_rgba(0,0,0,0.2)]"
-                          animate={{ opacity: isDarkMode ? 0 : 1, scale: isDarkMode ? 0.5 : 1 }}
-                          transition={{ duration: 0.3 }}
-                          alt="Sun"
-                        />
-                        <motion.img
-                          src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed1_Vectors-Wrapper.svg"
-                          className="absolute w-[29px] h-[29px] rounded-full"
-                          animate={{ opacity: isDarkMode ? 1 : 0, scale: isDarkMode ? 1 : 0.5 }}
-                          transition={{ duration: 0.3 }}
-                          alt="Moon"
-                        />
-                      </motion.div>
-                    </div>
+                    <motion.img
+                      src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed0_Vectors-Wrapper.svg"
+                      className="absolute w-[29px] h-[29px] rounded-full shadow-[4px_8px_6px_rgba(0,0,0,0.2)]"
+                      animate={{ opacity: isDarkMode ? 0 : 1, scale: isDarkMode ? 0.5 : 1 }}
+                      transition={{ duration: 0.3 }}
+                      alt="Sun"
+                    />
+                    <motion.img
+                      src="https://cdn.prod.website-files.com/69c773b68211f0dc7da25e7a/69c773b78211f0dc7da25ed1_Vectors-Wrapper.svg"
+                      className="absolute w-[29px] h-[29px] rounded-full"
+                      animate={{ opacity: isDarkMode ? 1 : 0, scale: isDarkMode ? 1 : 0.5 }}
+                      transition={{ duration: 0.3 }}
+                      alt="Moon"
+                    />
                   </motion.div>
-                  <a href="#" className={`text-sm font-medium transition-colors ${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}>{t('nav.signIn')}</a>
-                  <button
-                    onClick={() => setIsSurveyOpen(true)}
-                    className={`relative overflow-hidden rounded-full font-semibold px-5 py-2 text-sm transition-all duration-300 flex items-center gap-2 group ${isDarkMode
-                        ? 'bg-blue-600 text-white border border-blue-500 hover:bg-blue-500'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'
-                      }`}
-                  >
-                    <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-                    {t('nav.getStarted')}
-                  </button>
+                </div>
+              </motion.div>
+
+{!isSurveyOpen && (
+                <>
+                  {!isLoggedIn ? (
+                    <>
+                      <button
+                        onClick={handleShowLoginConfirm}
+                        className={`hidden md:block text-sm font-medium transition-colors ${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                      >
+                        {t('nav.signIn')}
+                      </button>
+                      <button
+                        onClick={() => setIsSurveyOpen(true)}
+                        className={`relative overflow-hidden rounded-full font-semibold px-5 py-2 text-sm transition-all duration-300 flex items-center gap-2 group ${isDarkMode
+                          ? 'bg-blue-600 text-white border border-blue-500 hover:bg-blue-500'
+                          : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'
+                          }`}
+                      >
+                        <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                        {t('nav.getStarted')}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isDarkMode ? 'bg-blue-600' : 'bg-blue-600'}`}>
+                        {currentUser?.name?.[0] || 'D'}
+                      </div>
+                      <div className="hidden sm:flex flex-col">
+                        <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{currentUser?.name}</span>
+                        <button
+                          onClick={handleLogout}
+                          className={`text-xs font-semibold transition-colors ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-700'}`}
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
               {/* Language switcher */}
@@ -1999,7 +2076,7 @@ export default function App() {
                   className={`flex items-center rounded-full p-1 pr-3 cursor-pointer transition-colors border ${isDarkMode
                     ? 'bg-black/90 hover:bg-black border-white/10 shadow-lg shadow-black/20'
                     : 'bg-white/60 hover:bg-white/90 border-white/60 shadow-sm'
-                  }`}
+                    }`}
                 >
                   <img
                     src={`https://hatscripts.github.io/circle-flags/flags/${language === 'en' ? 'gb' : language === 'fr' ? 'fr' : language === 'de' ? 'de' : language === 'zh' ? 'cn' : 'vn'}.svg`}
@@ -2045,6 +2122,7 @@ export default function App() {
         {showPrivacyModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" onClick={() => setShowPrivacyModal(false)}>
             <motion.div
+              key={language}
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
               className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-2xl w-full text-left max-h-[85vh] overflow-y-auto ${isDarkMode ? 'bg-[#0b132b]/95 border-white/10' : 'bg-white/95 border border-gray-200'}`}
               onClick={e => e.stopPropagation()}
@@ -2079,7 +2157,8 @@ export default function App() {
               </div>
               <button
                 onClick={() => setShowPrivacyModal(false)}
-                className={`mt-8 w-full py-3 rounded-full font-semibold transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-300 hover:bg-white/20' : 'bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200'}`}              >
+                className={`mt-8 w-full py-3 rounded-full font-semibold transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-300 hover:bg-white/20' : 'bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200'}`}
+              >
                 {t('legal.close')}
               </button>
             </motion.div>
@@ -2092,6 +2171,7 @@ export default function App() {
         {showEthicsModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md" onClick={() => setShowEthicsModal(false)}>
             <motion.div
+              key={language}
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
               className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-2xl w-full text-left max-h-[85vh] overflow-y-auto ${isDarkMode ? 'bg-[#0b132b]/95 border-white/10' : 'bg-white/95 border border-gray-200'}`}
               onClick={e => e.stopPropagation()}
@@ -2134,8 +2214,111 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Technology Modal */}
+      <AnimatePresence>
+        {showTechnologyModal && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/40 backdrop-blur-md" onClick={() => setShowTechnologyModal(false)}>
+            <div className="flex items-center justify-center min-h-screen p-4">
+              <motion.div
+                key={language}
+                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+                className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden w-full max-w-2xl max-h-[90vh] flex flex-col ${isDarkMode ? 'bg-[#0b132b]/95 border-white/10' : 'bg-white/95 border border-gray-200'}`}
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Fixed Header */}
+                <div className={`sticky top-0 z-10 flex items-center justify-between px-8 py-6 border-b backdrop-blur-3xl ${isDarkMode ? 'border-white/10 bg-[#0b132b]/80' : 'border-gray-200 bg-white/80'}`}>
+                  <h2 className={`text-2xl font-bold flex-1 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('techModal.title')}</h2>
+                  <button
+                    onClick={() => setShowTechnologyModal(false)}
+                    className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-400 hover:bg-white/20 hover:text-white' : 'bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Scrollable Content */}
+                <div className={`overflow-y-auto flex-1 px-8 py-6 space-y-8 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {/* Main Question & Intro */}
+                  <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-800/50 border border-gray-700/50' : 'bg-gray-50 border border-gray-200'}`}>
+                    <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
+                      {t('techModal.question')}
+                    </h3>
+                    <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {t('techModal.intro')}
+                    </p>
+                  </div>
+
+                  {/* Three Core Pillars */}
+                  <div>
+                    <h3 className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {t('techModal.pillars')}
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      {/* Pillar 1 */}
+                      <div className={`p-5 rounded-xl border transition-all ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600/50' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
+                        <h4 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          {t('techModal.pillar1Title')}
+                        </h4>
+                        <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {t('techModal.pillar1Text')}
+                        </p>
+                      </div>
+
+                      {/* Pillar 2 */}
+                      <div className={`p-5 rounded-xl border transition-all ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600/50' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
+                        <h4 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          {t('techModal.pillar2Title')}
+                        </h4>
+                        <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {t('techModal.pillar2Text')}
+                        </p>
+                      </div>
+
+                      {/* Pillar 3 */}
+                      <div className={`p-5 rounded-xl border transition-all ${isDarkMode ? 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600/50' : 'bg-gray-50 border-gray-200 hover:border-gray-300'}`}>
+                        <h4 className={`font-bold mb-2 flex items-center gap-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
+                          <span className="w-2 h-2 rounded-full bg-gray-400" />
+                          {t('techModal.pillar3Title')}
+                        </h4>
+                        <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {t('techModal.pillar3Text')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Operation Principles */}
+                  <div className={`p-6 rounded-xl ${isDarkMode ? 'bg-gray-800/50 border border-gray-700/50' : 'bg-gray-50 border border-gray-200'}`}>
+                    <h3 className={`font-bold mb-4 text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>
+                      {t('techModal.operationTitle')}
+                    </h3>
+                    <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {t('techModal.operationText')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Fixed Footer */}
+                <div className={`sticky bottom-0 z-10 px-8 py-4 border-t backdrop-blur-3xl ${isDarkMode ? 'border-white/10 bg-[#0b132b]/80' : 'border-gray-200 bg-white/80'}`}>
+                  <button
+                    onClick={() => setShowTechnologyModal(false)}
+                    className={`w-full py-3 rounded-full font-semibold transition-all ${isDarkMode ? 'bg-white/10 border border-white/20 text-gray-300 hover:bg-white/20 hover:text-white' : 'bg-gray-100 border border-gray-200 text-gray-700 hover:bg-gray-200 hover:text-gray-900'}`}
+                  >
+                    {t('techModal.close')}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
       {renderHowItWorksModal()}
       {renderEmergencyModal()}
+      {renderLoginConfirmModal()}
 
       <AnimatePresence mode="wait">
         {!isSurveyOpen ? (
@@ -2174,34 +2357,63 @@ export default function App() {
               {isDarkMode ? (
                 /* ========== DARK MODE: centered full-globe layout ========== */
                 <>
-                  {/* Earth Background — centered */}
-                  <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none overflow-hidden">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8, y: 100 }}
-                      animate={{ opacity: 0.9, scale: 1, y: 0 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      style={{ width: '100vw', maxWidth: '1200px', minWidth: '800px', aspectRatio: '1/1' }}
-                    >
-                      <motion.img
-                        src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop"
-                        alt="Earth"
-                        className="w-full h-full object-cover rounded-full grayscale contrast-[1.2] brightness-[0.7]"
-                        style={{
-                          maskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)',
-                          WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)'
-                        }}
-                        animate={{ rotate: earthRotation }}
-                        transition={{ duration: 2.66, ease: "easeInOut" }}
-                      />
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-[#0B0F19]/80 to-[#0B0F19] pointer-events-none" />
-                    </motion.div>
+                  {/* Earth Background — switches based on heroVariant */}
+                  <div className="absolute inset-0 z-[5] flex items-center justify-center pointer-events-none overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      {heroVariant === 1 ? (
+                        /* Dark v1: Old rotating grayscale Earth from Unsplash */
+                        <motion.div
+                          key="dark-globe-old"
+                          initial={{ opacity: 0, scale: 0.8, y: 200 }}
+                          animate={{ opacity: 0.85, scale: 1, y: -160 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          style={{ width: '180vw', maxWidth: '1920px', minWidth: '1440px', aspectRatio: '1/1' }}
+                        >
+                          <motion.img
+                            src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop"
+                            alt="Earth"
+                            className="w-full h-full object-cover rounded-full"
+                            style={{
+                              filter: 'grayscale(1) contrast(1.2) brightness(0.7)',
+                              maskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)',
+                              WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)'
+                            }}
+                            animate={{ rotate: earthRotation }}
+                            transition={{ duration: 2.66, ease: "easeInOut" }}
+                          />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-[#0B0F19]/80 to-[#0B0F19] pointer-events-none" />
+                        </motion.div>
+                      ) : (
+                        /* Dark v2: Current space Earth */
+                        <motion.div
+                          key="dark-globe-new"
+                          initial={{ opacity: 0, scale: 0.8, y: 100 }}
+                          animate={{ opacity: 0.9, scale: 1, y: -80 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          style={{ width: '100vw', maxWidth: '960px', minWidth: '720px', aspectRatio: '1/1' }}
+                        >
+                          <motion.img
+                            src="https://image2url.com/r2/default/images/1775837714078-559555ac-f611-48f2-afde-5968948264e1.png"
+                            alt="Earth"
+                            className="w-full h-full object-cover rounded-full"
+                            style={{
+                              maskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)',
+                              WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 65%, transparent 70%)'
+                            }}
+                          />
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-transparent via-[#0B0F19]/80 to-[#0B0F19] pointer-events-none" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                   {/* Bottom gradient */}
                   <div className="absolute bottom-0 left-0 w-full h-[30vh] bg-gradient-to-t from-[#0B0F19] via-[#0B0F19]/90 to-transparent z-[2] pointer-events-none" />
                   {/* Dark mode content — centered */}
                   <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 pt-32 pb-80 md:pb-96" style={{ minHeight: '100vh' }}>
                     <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-wide mb-8 border bg-white/8 border-white/15 text-white/90 backdrop-blur-md"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold tracking-widest mb-8 border bg-white/8 border-white/15 text-white/90 backdrop-blur-md"
                     >
                       <span className="w-2 h-2 rounded-full bg-[#a3e635] shadow-[0_0_8px_#a3e635] animate-pulse" />
                       {t('hero.badge')}
@@ -2235,7 +2447,7 @@ export default function App() {
                       </button>
                     </motion.div>
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.5 }}
-                      className="flex flex-wrap items-center justify-center gap-6 text-white/50"
+                      className="flex flex-wrap items-center gap-6 text-white/50"
                     >
                       <div className="flex items-center gap-2">
                         <ShieldCheck className="w-5 h-5 text-[#a3e635]" />
@@ -2252,40 +2464,93 @@ export default function App() {
                 /* ========== LIGHT MODE: Glassmorphism overlap layout ========== */
                 <div className="relative z-10 container mx-auto px-6 flex flex-col justify-center min-h-screen pt-28 pb-16">
 
-                  {/* Background Globe - Absolute positioned to allow overlapping */}
-                  <div className="absolute top-1/2 right-[-20%] md:right-[-10%] lg:right-[0%] -translate-y-1/2 w-[600px] h-[600px] lg:w-[900px] lg:h-[900px] pointer-events-none z-0">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 1.5, ease: "easeOut" }}
-                      className="w-full h-full relative"
-                      style={{
-                        WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)',
-                        maskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)'
-                      }}
-                    >
-                      {/* Inner glow to make it look like pale frosted glass */}
-                      <div className="absolute inset-0 rounded-full" style={{
-                        background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 45%, transparent 75%)',
-                        zIndex: 10
-                      }} />
-                      <motion.div
-                        className="w-full h-full rounded-full"
-                        style={{
-                          backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/2/22/Earth_Western_Hemisphere_transparent_background.png)',
-                          backgroundSize: '100%',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
-                          /* Soft, bright, blurry globe filter */
-                          filter: 'brightness(1.8) contrast(0.85) grayscale(0.2) saturate(0.9) blur(1.5px) opacity(0.9)',
-                          mixBlendMode: 'luminosity'
-                        }}
-                        animate={{ rotate: earthRotation }}
-                        transition={{ duration: 2.66, ease: "easeInOut" }}
-                      />
-                      {/* Deep internal shadow to give 3D volume with very soft edges */}
-                      <div className="absolute inset-0 rounded-full shadow-[inset_-20px_-20px_80px_rgba(200,220,255,0.3),inset_30px_30px_80px_rgba(255,255,255,0.8)] z-20 pointer-events-none" />
-                    </motion.div>
+                  {/* Background Visual - switches between Globe (v1) and Girl Illustration (v2) */}
+                  <div className="absolute top-1/2 right-[-20%] md:right-[-10%] lg:right-[0%] -translate-y-1/2 w-[600px] h-[600px] lg:w-[900px] lg:h-[900px] pointer-events-none" style={{ zIndex: -10 }}>
+                    <AnimatePresence mode="wait">
+                      {heroVariant === 1 ? (
+                        /* ---- Hero v1: Rotating Globe ---- */
+                        <motion.div
+                          key="globe"
+                          initial={{ opacity: 0, scale: 0.85 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className="w-full h-full relative"
+                          style={{
+                            WebkitMaskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)',
+                            maskImage: 'radial-gradient(circle at 50% 50%, black 55%, transparent 80%)'
+                          }}
+                        >
+                          {/* Inner glow for 3D effect */}
+                          <div className="absolute inset-0 rounded-full" style={{
+                            background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 45%, transparent 75%)',
+                            zIndex: 10
+                          }} />
+                          <motion.div
+                            className="w-full h-full rounded-full"
+                            style={{
+                              backgroundImage: 'url(https://upload.wikimedia.org/wikipedia/commons/2/22/Earth_Western_Hemisphere_transparent_background.png)',
+                              backgroundSize: '100%',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              filter: 'brightness(1.8) contrast(0.85) grayscale(0.2) saturate(0.9) blur(1.5px) opacity(0.9)',
+                              mixBlendMode: 'luminosity'
+                            }}
+                            animate={{ rotate: earthRotation }}
+                            transition={{ duration: 2.66, ease: "easeInOut" }}
+                          />
+                          {/* Deep shadow for 3D volume */}
+                          <div className="absolute inset-0 rounded-full shadow-[inset_-20px_-20px_80px_rgba(200,220,255,0.3),inset_30px_30px_80px_rgba(255,255,255,0.8)] z-20 pointer-events-none" />
+                        </motion.div>
+                      ) : (
+                        /* ---- Hero v2: Girl with Flowers Illustration ---- */
+                        <motion.div
+                          key="flowers"
+                          initial={{ opacity: 0, scale: 0.85 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          transition={{ duration: 0.6, ease: "easeOut" }}
+                          className="w-full h-full relative"
+                        >
+                          <motion.div
+                            className="w-full h-full"
+                            style={{
+                              backgroundImage: 'url(https://image2url.com/r2/default/images/1775833042260-9b4ddd91-fea4-4bd9-acfb-ee4c62c41c64.png)',
+                              backgroundSize: '100%',
+                              backgroundPosition: 'center',
+                              backgroundRepeat: 'no-repeat',
+                              opacity: 0.9
+                            }}
+                          />
+                          {/* Falling flower petals */}
+                          {[...Array(8)].map((_, i) => (
+                            <motion.div
+                              key={`flower-${i}`}
+                              className="absolute rounded-full"
+                              style={{
+                                width: `${Math.random() * 12 + 8}px`,
+                                height: `${Math.random() * 12 + 8}px`,
+                                backgroundColor: `rgba(255, 235, 59, ${Math.random() * 0.5 + 0.5})`,
+                                left: `${Math.random() * 100}%`,
+                                top: '-20px',
+                                boxShadow: `0 0 ${Math.random() * 8 + 4}px rgba(255, 235, 59, ${Math.random() * 0.5 + 0.4})`
+                              }}
+                              animate={{
+                                y: ['-20px', '600px'],
+                                x: [`${Math.random() * 100 - 50}px`, `${Math.random() * 100 - 50}px`],
+                                opacity: [0, 0.95, 0]
+                              }}
+                              transition={{
+                                duration: Math.random() * 6 + 8,
+                                repeat: Infinity,
+                                delay: Math.random() * 5,
+                                ease: "easeInOut"
+                              }}
+                            />
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Foreground Content */}
@@ -2350,144 +2615,46 @@ export default function App() {
                   </div>
                 </div>
               )}
+              {/* ── Hero Variant Toggle Button (bottom-right, both modes) ── */}
+              <div className={`absolute bottom-8 right-8 z-50 flex items-center gap-1 p-1.5 rounded-full backdrop-blur-2xl border shadow-lg ${
+                isDarkMode
+                  ? 'bg-white/10 border-white/20'
+                  : 'bg-white/30 border-white/60'
+              }`}>
+                <button
+                  id="hero-variant-1-btn"
+                  onClick={() => setHeroVariant(1)}
+                  title="Hero version 1 — Globe"
+                  className={`w-9 h-9 rounded-full font-bold text-sm transition-all duration-300 ${
+                    heroVariant === 1
+                      ? 'bg-[#1d70f5] text-white shadow-md'
+                      : isDarkMode
+                        ? 'text-white/60 hover:bg-white/20'
+                        : 'text-slate-600 hover:bg-white/50'
+                  }`}
+                >1</button>
+                <button
+                  id="hero-variant-2-btn"
+                  onClick={() => setHeroVariant(2)}
+                  title="Hero version 2 — Illustration"
+                  className={`w-9 h-9 rounded-full font-bold text-sm transition-all duration-300 ${
+                    heroVariant === 2
+                      ? 'bg-[#1d70f5] text-white shadow-md'
+                      : isDarkMode
+                        ? 'text-white/60 hover:bg-white/20'
+                        : 'text-slate-600 hover:bg-white/50'
+                  }`}
+                >2</button>
+              </div>
             </section>
 
             {/* Wellness Tools Section */}
-            <section id="solutions" className="py-24 relative z-10">
-              <div className="container mx-auto px-6">
-                <div className="text-center max-w-2xl mx-auto mb-16">
-                  <h2 className={`text-3xl lg:text-4xl font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('solutions.title')}</h2>
-                  <p className={`text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {t('solutions.subtitle')}
-                  </p>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-8">
-                  {/* Card 1 */}
-                  <div className={`relative backdrop-blur-3xl border rounded-[2rem] overflow-hidden p-8 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 ${isDarkMode
-                      ? 'bg-gradient-to-br from-blue-950/60 to-slate-900/60 border-blue-900/30 shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-                      : 'bg-white/75 border-sky-100/80 shadow-lg hover:shadow-xl hover:bg-white/90'
-                    }`}>
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border ${isDarkMode ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-blue-100 text-blue-600 border-blue-200'
-                      }`}>
-                      <BarChart2 className="w-7 h-7" />
-                    </div>
-                    <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('solutions.card1Title')}</h3>
-                    <p className={`leading-relaxed text-sm ${isDarkMode ? 'text-gray-400' : 'text-slate-600'}`}>
-                      {t('solutions.card1Text')}
-                    </p>
-                  </div>
-
-                  {/* Card 2 */}
-                  <div className={`relative backdrop-blur-3xl border rounded-[2rem] overflow-hidden p-8 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 ${isDarkMode
-                      ? 'bg-gradient-to-br from-emerald-950/60 to-slate-900/60 border-emerald-900/30 shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-                      : 'bg-white/75 border-green-100/80 shadow-lg hover:shadow-xl hover:bg-white/90'
-                    }`}>
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-green-100 text-green-600 border-green-200'
-                      }`}>
-                      <Leaf className="w-7 h-7" />
-                    </div>
-                    <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('solutions.card2Title')}</h3>
-                    <p className={`leading-relaxed text-sm ${isDarkMode ? 'text-gray-400' : 'text-slate-600'}`}>
-                      {t('solutions.card2Text')}
-                    </p>
-                  </div>
-
-                  {/* Card 3 */}
-                  <div className={`relative backdrop-blur-3xl border rounded-[2rem] overflow-hidden p-8 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 ${isDarkMode
-                      ? 'bg-gradient-to-br from-purple-950/60 to-slate-900/60 border-purple-900/30 shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
-                      : 'bg-white/75 border-purple-100/80 shadow-lg hover:shadow-xl hover:bg-white/90'
-                    }`}>
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border ${isDarkMode ? 'bg-purple-500/20 text-purple-400 border-purple-500/30' : 'bg-purple-100 text-purple-600 border-purple-200'
-                      }`}>
-                      <HeartHandshake className="w-7 h-7" />
-                    </div>
-                    <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`}>{t('solutions.card3Title')}</h3>
-                    <p className={`leading-relaxed text-sm ${isDarkMode ? 'text-gray-400' : 'text-slate-600'}`}>
-                      {t('solutions.card3Text')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Technology Section */}
-            <section id="technology" className={`py-24 transition-colors duration-700 ${isDarkMode ? 'bg-[#030712]' : 'bg-gradient-to-br from-slate-800 via-slate-900 to-blue-950'} text-white`}>
-              <div className="container mx-auto px-6">
-                <div className="max-w-4xl mx-auto">
-                  <div className="text-center mb-16">
-                    <div className="inline-flex items-center gap-2 bg-blue-900/50 text-blue-300 px-4 py-1.5 rounded-full text-sm font-semibold mb-6 border border-blue-800/50">
-                      <Activity className="w-4 h-4" />
-                      {t('tech.badge')}
-                    </div>
-                    <h2 className="text-3xl lg:text-4xl font-bold mb-6">{t('tech.title')}</h2>
-                    <p className="text-gray-400 text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: t('tech.subtitle').replace('XGBoost', '<b>XGBoost</b>').replace('20 điểm dữ liệu', '<b>20 điểm dữ liệu</b>').replace('20 data points', '<b>20 data points</b>') }} />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-8">
-                      <div className="flex gap-4">
-                        <div className="w-14 h-14 bg-blue-900/50 text-blue-400 rounded-2xl flex items-center justify-center shrink-0 border border-blue-800/50">
-                          <Activity className="w-7 h-7" />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold mb-2">{t('tech.point1Title')}</h4>
-                          <p className="text-gray-400 leading-relaxed text-sm">{t('tech.point1Text')}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="w-14 h-14 bg-green-900/50 text-green-400 rounded-2xl flex items-center justify-center shrink-0 border border-green-800/50">
-                          <CheckCircle2 className="w-7 h-7" />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold mb-2">{t('tech.point2Title')}</h4>
-                          <p className="text-gray-400 leading-relaxed text-sm">{t('tech.point2Text')}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-4">
-                        <div className="w-14 h-14 bg-purple-900/50 text-purple-400 rounded-2xl flex items-center justify-center shrink-0 border border-purple-800/50">
-                          <Brain className="w-7 h-7" />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold mb-2">{t('tech.point3Title')}</h4>
-                          <p className="text-gray-400 leading-relaxed text-sm">{t('tech.point3Text')}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-[#111827] rounded-[2rem] p-8 border border-gray-800 relative shadow-2xl">
-                      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-[2rem] pointer-events-none"></div>
-                      <h4 className="text-lg font-bold text-white mb-6 text-center relative z-10 flex items-center justify-center gap-2">
-                        <Lock className="w-4 h-4 text-blue-400" />
-                        {t('tech.modelTitle')}
-                      </h4>
-                      <div className="space-y-4 relative z-10">
-                        <div className="bg-gray-900 p-5 rounded-xl text-sm font-mono text-gray-300 border border-gray-800">
-                          <span className="text-blue-400">model</span> = XGBClassifier(<br />
-                          &nbsp;&nbsp;n_estimators=<span className="text-orange-400">200</span>,<br />
-                          &nbsp;&nbsp;learning_rate=<span className="text-orange-400">0.05</span>,<br />
-                          &nbsp;&nbsp;max_depth=<span className="text-orange-400">6</span>,<br />
-                          &nbsp;&nbsp;objective=<span className="text-green-400">'multi:softprob'</span><br />
-                          )<br />
-                          <span className="block mt-4 text-gray-500 italic">/* {t('ui.predictionOutput')}: LOW, MEDIUM, HIGH */</span>
-                        </div>
-                        <div className="bg-gray-900 p-4 rounded-xl text-sm font-mono text-gray-300 border border-gray-800 flex items-center justify-between">
-                          <span>{t('tech.modelAcc')}</span>
-                          <span className="bg-green-900/80 text-green-400 px-2 py-1 rounded text-sm border border-green-800">92.4%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+            <ArticleSection language={language} />
 
             {/* Footer */}
             <footer className={`border-t pt-12 pb-8 relative z-10 transition-colors duration-500 ${isDarkMode
-                ? 'border-white/10 bg-black/30 backdrop-blur-2xl'
-                : 'border-slate-200/60 bg-white/70 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)]'
+              ? 'border-white/10 bg-black/30 backdrop-blur-2xl'
+              : 'border-slate-200/60 bg-white/70 backdrop-blur-lg shadow-[0_-4px_20px_rgba(0,0,0,0.06)]'
               }`}>
               <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
@@ -2514,7 +2681,7 @@ export default function App() {
               </div>
             </footer>
           </motion.div>
-        ) : !hasConsented ? (
+        ) : !hasConsented && !showMotivational ? (
           <motion.div
             key="consent"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -2523,15 +2690,24 @@ export default function App() {
           >
             {renderConsentScreen()}
           </motion.div>
+        ) : !hasConsented && showMotivational ? (
+          <motion.div
+            key="motivational"
+            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="container mx-auto px-6 min-h-[100dvh] flex flex-col items-center justify-center py-24"
+          >
+            {renderMotivationalScreen()}
+          </motion.div>
         ) : (
           <motion.div
             key="survey"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-24 pb-12 max-w-[1360px]' : currentStep === 2 ? 'items-center justify-center py-24 max-w-[1360px]' : 'items-center justify-center py-24 max-w-3xl'}`}
+            className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-24 pb-12 max-w-[1360px]' : 'items-center justify-center py-24 max-w-3xl'}`}
           >
             {!isCompleted ? (
-              <div className={`relative rounded-[2rem] ${currentStep === 2 ? 'overflow-visible' : 'overflow-hidden'} p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
+              <div className={`relative rounded-[2rem] overflow-hidden p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
                 {/* Progress Bar */}
                 <div className="mb-12">
                   <div className={`flex justify-between text-sm font-bold mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -2598,118 +2774,241 @@ export default function App() {
                     <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{t('survey.analyzingDesc')}</p>
                   </div>
                 ) : aiResult ? (
-                  <div className="text-left w-full max-w-[1600px] mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-6 lg:gap-8 items-start">
-                      <aside className="hidden lg:block">
-                        <div className="sticky top-24">
-                          <div className={`analytics-glass-card rounded-[1.75rem] p-4 ${isDarkMode ? 'dark' : ''}`}>
-                          <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-3 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                            style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                            {t('ui.dataModule')}
-                          </div>
-                          <div className="relative group">
-                            <select
-                              value={activeDataModule}
-                              onChange={(e) => setActiveDataModule(e.target.value as 'dashboard' | 'analytics')}
-                              className={`w-full appearance-none pl-4 pr-10 py-2.5 rounded-full text-sm font-semibold border backdrop-blur-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-400/40 ${isDarkMode
-                                  ? 'bg-white/10 text-slate-100 border-white/15 hover:bg-white/15 shadow-[0_8px_24px_rgba(2,6,23,0.35),inset_0_1px_1px_rgba(255,255,255,0.12)]'
-                                  : 'bg-white/55 text-slate-700 border-white/70 hover:bg-white/70 shadow-[0_8px_24px_rgba(15,23,42,0.08),inset_0_1px_1px_rgba(255,255,255,0.9)]'
-                                }`}
-                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                            >
-                              <option value="dashboard">{t('ui.module.dashboard')}</option>
-                              <option value="analytics">{t('ui.module.analytics')}</option>
-                            </select>
-                            <ChevronDown
-                              className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${isDarkMode ? 'text-slate-300 group-hover:text-slate-100' : 'text-slate-500 group-hover:text-slate-700'
-                                }`}
-                            />
-                          </div>
-                        </div>
-                        </div>
-                      </aside>
+                  <div className="relative w-full">
+                    {/* TOP LEFT - Back to Dashboard */}
+                    <motion.button
+                      onClick={() => setActiveDataModule('dashboard')}
+                      className={`hidden lg:flex absolute -left-7 top-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
+                        activeDataModule === 'dashboard'
+                          ? (isDarkMode ? 'bg-white/30 text-white border border-white/60' : 'bg-white/30 text-slate-900 border border-white/60')
+                          : (isDarkMode ? 'bg-white/15 text-slate-300 hover:bg-white/25 border border-white/30' : 'bg-white/15 text-slate-600 hover:bg-white/25 border border-white/30')
+                      }`}
+                      whileHover={{ scale: 1.1, x: 5 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{ WebkitFontSmoothing: 'antialiased' }}
+                      title={t('ui.backToDashboard')}
+                    >
+                      &lt;
+                    </motion.button>
 
-                      <div className="analytics-liquid-bg rounded-[2.5rem] p-4 md:p-6">
-                        <div className="lg:hidden mb-4">
-                          <div className={`analytics-glass-card rounded-[1.5rem] p-4 ${isDarkMode ? 'dark' : ''}`}>
-                            <div className={`text-[11px] font-black uppercase tracking-[0.2em] mb-2 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                              {t('ui.dataModule')}
-                            </div>
-                            <div className="relative group">
-                              <select
-                                value={activeDataModule}
-                                onChange={(e) => setActiveDataModule(e.target.value as 'dashboard' | 'analytics')}
-                                className={`w-full appearance-none pl-4 pr-10 py-2.5 rounded-full text-sm font-semibold border backdrop-blur-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-teal-400/40 ${isDarkMode
-                                    ? 'bg-white/10 text-slate-100 border-white/15 hover:bg-white/15'
-                                    : 'bg-white/65 text-slate-700 border-white/70 hover:bg-white/75'
-                                  }`}
-                                style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                              >
-                                <option value="dashboard">{t('ui.module.dashboard')}</option>
-                                <option value="analytics">{t('ui.module.analytics')}</option>
-                              </select>
-                              <ChevronDown
-                                className={`w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}
+                    {/* TOP RIGHT - Go to Analytics */}
+                    <motion.button
+                      onClick={() => setActiveDataModule('analytics')}
+                      className={`hidden lg:flex absolute -right-7 top-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
+                        activeDataModule === 'analytics'
+                          ? (isDarkMode ? 'bg-white/30 text-white border border-white/60' : 'bg-white/30 text-slate-900 border border-white/60')
+                          : (isDarkMode ? 'bg-white/15 text-slate-300 hover:bg-white/25 border border-white/30' : 'bg-white/15 text-slate-600 hover:bg-white/25 border border-white/30')
+                      }`}
+                      whileHover={{ scale: 1.1, x: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{ WebkitFontSmoothing: 'antialiased' }}
+                      title={t('ui.toAnalytics')}
+                    >
+                      &gt;
+                    </motion.button>
+
+                    {/* BOTTOM LEFT - Back to Dashboard */}
+                    <motion.button
+                      onClick={() => setActiveDataModule('dashboard')}
+                      className={`hidden lg:flex absolute left-4 bottom-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
+                        activeDataModule === 'dashboard'
+                          ? (isDarkMode ? 'bg-white/30 text-white border border-white/60' : 'bg-white/30 text-slate-900 border border-white/60')
+                          : (isDarkMode ? 'bg-white/15 text-slate-300 hover:bg-white/25 border border-white/30' : 'bg-white/15 text-slate-600 hover:bg-white/25 border border-white/30')
+                      }`}
+                      whileHover={{ scale: 1.1, x: 5 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{ WebkitFontSmoothing: 'antialiased' }}
+                      title={t('ui.backToDashboard')}
+                    >
+                      &lt;
+                    </motion.button>
+
+                    {/* BOTTOM RIGHT - Go to Analytics */}
+                    <motion.button
+                      onClick={() => setActiveDataModule('analytics')}
+                      className={`hidden lg:flex absolute right-4 bottom-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
+                        activeDataModule === 'analytics'
+                          ? (isDarkMode ? 'bg-white/30 text-white border border-white/60' : 'bg-white/30 text-slate-900 border border-white/60')
+                          : (isDarkMode ? 'bg-white/15 text-slate-300 hover:bg-white/25 border border-white/30' : 'bg-white/15 text-slate-600 hover:bg-white/25 border border-white/30')
+                      }`}
+                      whileHover={{ scale: 1.1, x: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{ WebkitFontSmoothing: 'antialiased' }}
+                      title={t('ui.toAnalytics')}
+                    >
+                      &gt;
+                    </motion.button>
+
+                    {/* Dashboard View */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      style={{
+                        pointerEvents: activeDataModule === 'dashboard' ? 'auto' : 'none',
+                        display: activeDataModule === 'dashboard' ? 'block' : 'none'
+                      }}
+                      className="w-full"
+                    >
+                    <div className="text-left w-full max-w-[1320px] mx-auto" style={{
+                      background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
+                    }}>
+                      {/* Medical Report Style */}
+                      <div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>
+                          {/* Binding holes on the left */}
+                          <div className="absolute left-8 top-0 bottom-0 w-1 flex flex-col items-center justify-around pointer-events-none">
+                            {[...Array(8)].map((_, i) => (
+                              <motion.div
+                                key={`hole-${i}`}
+                                className="w-3 h-3 rounded-full border-2"
+                                style={{
+                                  borderColor: isDarkMode ? 'rgba(100,116,139,0.5)' : 'rgba(71,85,105,0.4)',
+                                  boxShadow: isDarkMode
+                                    ? 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(255,255,255,0.1)'
+                                    : 'inset 0 1px 2px rgba(0,0,0,0.1), 0 1px 2px rgba(255,255,255,0.8)'
+                                }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
                               />
-                            </div>
+                            ))}
                           </div>
-                        </div>
 
-                        <section className={`rounded-[2.75rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : ''} lg:min-h-[640px]`}>
-                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
-                        <div className="lg:col-span-12 flex flex-col gap-8">
-                          {activeDataModule === 'analytics' ? (
-                            renderDashboardView()
-                          ) : (
-                            <>
-                              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                          {/* Medical Report Header */}
+                          <div className={`mb-8 pb-6 border-b-2 pl-8 ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                            <div className="flex items-start justify-between gap-4 mb-4">
                               <div>
                                 <h2 className={`text-3xl lg:text-4xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
-                                  style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.resultsPanel.title')}</h2>
-                                <p className={`mt-2 text-sm md:text-base ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.resultsPanel.subtitle')}</p>
+                                  style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+                                  {t('ui.resultsPanel.title')}
+                                </h2>
+                                <p className={`mt-2 text-sm md:text-base ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}
+                                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                                  {t('ui.resultsPanel.subtitle')}
+                                </p>
                               </div>
-                              <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide ${isDarkMode ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-600/10 text-teal-700'}`}
-                                style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                              <motion.div
+                                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide ${isDarkMode ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30' : 'bg-teal-600/10 text-teal-700 border border-teal-200'}`}
+                                style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                              >
                                 <Activity className="w-4 h-4" /> {t('ui.resultsPanel.last30Days')}
-                              </div>
-                              </div>
+                              </motion.div>
+                            </div>
+                          </div>
 
+                          {/* Content Area */}
+                          <div className="pl-8">
+                            <section className={`rounded-[2rem] p-6 md:p-8 xl:p-10 ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                                <div className="lg:col-span-12 flex flex-col gap-8">
+                                  {renderDashboardView()}
+                                </div>
+                              </div>
+                            </section>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    {/* Analytics View */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={activeDataModule === 'analytics' ? { opacity: 1 } : { opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      style={{
+                        pointerEvents: activeDataModule === 'analytics' ? 'auto' : 'none',
+                        display: activeDataModule === 'analytics' ? 'block' : 'none'
+                      }}
+                      className="w-full"
+                    >
+                    <div className="text-left w-full max-w-[1320px] mx-auto" style={{
+                      background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
+                    }}>
+                      <div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>
+                          {/* Binding holes on the left */}
+                          <div className="absolute left-8 top-0 bottom-0 w-1 flex flex-col items-center justify-around pointer-events-none">
+                            {[...Array(8)].map((_, i) => (
+                              <motion.div
+                                key={`hole-analytics-${i}`}
+                                className="w-3 h-3 rounded-full border-2"
+                                style={{
+                                  borderColor: isDarkMode ? 'rgba(100,116,139,0.5)' : 'rgba(71,85,105,0.4)',
+                                  boxShadow: isDarkMode
+                                    ? 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(255,255,255,0.1)'
+                                    : 'inset 0 1px 2px rgba(0,0,0,0.1), 0 1px 2px rgba(255,255,255,0.8)'
+                                }}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.05 }}
+                              />
+                            ))}
+                          </div>
+
+                          {/* Medical Report Header */}
+                          <div className={`mb-8 pb-6 border-b-2 pl-8 ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
+                            <div className="flex items-start justify-between gap-4 mb-4">
+                              <div>
+                                <h2 className={`text-3xl lg:text-4xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+                                  style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+                                  {t('ui.resultsPanel.title')}
+                                </h2>
+                                <p className={`mt-2 text-sm md:text-base ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}
+                                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                                  {t('ui.resultsPanel.subtitle')}
+                                </p>
+                              </div>
+                              <motion.div
+                                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide ${isDarkMode ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30' : 'bg-teal-600/10 text-teal-700 border border-teal-200'}`}
+                                style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                              >
+                                <Activity className="w-4 h-4" /> {t('ui.resultsPanel.last30Days')}
+                              </motion.div>
+                            </div>
+                          </div>
+
+                          {/* Content Area */}
+                          <div className="pl-8">
+                            <section className={`rounded-[2rem] p-6 md:p-8 xl:p-10 ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
                               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 flex-1">
                                 {/* Stress Load Card */}
                                 <div className={`lg:col-span-5 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
-                                  <div className="flex items-start justify-between gap-3 mb-3">
+                                  <div className="flex items-start justify-between gap-3 mb-4">
                                     <div>
-                                      <h3 className={`text-base font-bold leading-tight ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
+                                      <h3 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
                                         style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.resultsPanel.stressLoad')}</h3>
-                                      <p className={`text-[11px] mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+                                      <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.resultsPanel.stressLoadDesc')}</p>
                                     </div>
-                                    <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
+                                    <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
                                       }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.live')}</span>
                                   </div>
-                                  <div className="w-full flex items-center justify-center py-2">
+                                  <div className="flex flex-col items-center justify-center py-2">
                                     <GaugeChart level={aiResult.stress_level} confidence={aiResult.confidence_score} t={t} isDarkMode={isDarkMode} />
                                   </div>
-                                  <div className="mt-4 pt-3 grid grid-cols-3 gap-2 items-start" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}` }}>
-                                    <div className="flex flex-col items-center justify-center text-center min-w-0">
-                                      <div className={`text-[9px] uppercase tracking-[0.16em] font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                                  <div className="mt-4 pt-4 grid grid-cols-3 gap-2" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
+                                    <div className="text-center">
+                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.status.title')}</div>
-                                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{insightMeta?.levelLabel || t('results.medium')}</div>
                                     </div>
-                                    <div className="flex flex-col items-center justify-center text-center min-w-0">
-                                      <div className={`text-[9px] uppercase tracking-[0.16em] font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                                    <div className="text-center">
+                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.trend')}</div>
-                                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-rose-300' : 'text-rose-500'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>+12%</div>
-                                    </div>
-                                    <div className="flex flex-col items-center justify-center text-center min-w-0">
-                                      <div className={`text-[9px] uppercase tracking-[0.16em] font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.baseline')}</div>
-                                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}
+                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.stable')}</div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
+                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.baseline')}</div>
+                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.max(0, Math.round((insightMeta?.confidencePct ?? 0) * 0.8))}%</div>
                                     </div>
                                   </div>
                                 </div>
@@ -2728,7 +3027,8 @@ export default function App() {
                                       return (
                                         <div key={`bar-${idx}`} style={{ width: `${pct}%`, backgroundColor: color }}
                                           className="h-full flex items-center justify-center text-[10px] text-white font-bold"
-                                          title={`${item.feature}: ${Math.round(item.importance)}%`}>
+                                          title={`${getFeatureLabel(item.feature)}: ${Math.round(item.importance)}%`}
+                                        >
                                           {pct > 8 ? Math.round(item.importance) : ''}
                                         </div>
                                       );
@@ -2743,7 +3043,7 @@ export default function App() {
                                           <span className="w-3 h-3 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: dotColor }} />
                                           <div>
                                             <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{item.feature}</div>
+                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{getFeatureLabel(item.feature)}</div>
                                             <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                               style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.round(item.importance)}% {t('ui.impact')}</div>
                                           </div>
@@ -2751,45 +3051,57 @@ export default function App() {
                                       );
                                     })}
                                   </div>
-                                </div>
-                              </div>
-
-                              {/* Prominent Trends + Critical Touchpoints */}
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                                <div className={`analytics-glass-card rounded-[1.75rem] p-5 flex items-center gap-4 border border-white/40 ${isDarkMode ? 'dark' : ''}`}>
-                                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkMode ? 'bg-teal-500/20 text-teal-300' : 'bg-teal-600/10 text-teal-700'}`}>
-                                    <Activity className="w-6 h-6" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2 mb-1">
-                                      <h4 className={`text-base font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                        style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.prominentTrends')}</h4>
-                                      <Info className={`w-4 h-4 shrink-0 ${isDarkMode ? 'text-slate-500' : 'text-slate-300'}`} />
-                                    </div>
-                                    <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                                      {insightCopy?.trends || t('ui.prominentTrendsFallback')}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className={`analytics-glass-card rounded-[1.75rem] p-5 flex items-center gap-4 border border-white/40 ${isDarkMode ? 'dark' : ''}`}>
-                                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${isDarkMode ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-700'}`}>
-                                    <CheckCircle2 className="w-6 h-6" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h4 className={`text-base font-bold mb-1.5 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+                                  <div className="mt-8 border-t border-slate-200/50 dark:border-white/10 pt-6">
+                                    <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
                                       style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.criticalTouchpoints')}</h4>
                                     <div className="flex flex-wrap gap-2">
                                       {(insightMeta?.topFeatures || []).map((item, idx) => (
                                         <span key={`touch-${idx}`}
                                           className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-white/60 text-slate-700'}`}
                                           style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                                          {item.feature} ({Math.round(item.importance)}%)
+                                          {getFeatureLabel(item.feature)} ({Math.round(item.importance)}%)
                                         </span>
                                       ))}
                                     </div>
                                   </div>
+                                </div>
+                              </div>
+                            </section>
+
+                              {/* Prominent Trends */}
+                              <div className="max-w-2xl mx-auto w-full mt-4">
+                                <div className={`analytics-glass-card w-full rounded-[1.75rem] p-5 flex flex-col items-center text-center border border-white/40 ${isDarkMode ? 'dark' : ''}`}>
+                                  <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+                                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.prominentTrends')}</h4>
+                                  {(() => {
+                                    // buildInsightCopy() always formats as:
+                                    // "<intro>. Top trends: <f1>, <f2>, <f3>."
+                                    // We extract ONLY the feature tags (format: "Label (XX%)").
+                                    const rawTrends = String(insightCopy?.trends || t('ui.prominentTrendsFallback'));
+                                    // Match all "Label (XX%)" tokens regardless of language
+                                    const tagRegex = /([^,;\n(]+\([^)]+%\))/g;
+                                    const tagMatches = rawTrends.match(tagRegex) || [];
+                                    const trendsList: string[] = tagMatches
+                                      .map(s => s.trim())
+                                      .filter(Boolean);
+
+                                    // Final fallback: split on commas/semicolons
+                                    const displayList = trendsList.length > 0
+                                      ? trendsList
+                                      : rawTrends.split(/[,;\n•]+/).map(s => s.replace(/\.$/, '').trim()).filter(Boolean);
+
+                                    return (
+                                      <div className="flex flex-wrap justify-center gap-2">
+                                        {displayList.map((item, idx) => (
+                                          <span key={`trend-${idx}`}
+                                            className={`text-xs font-semibold px-2.5 py-1 rounded-full ${isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-white/60 text-slate-700'}`}
+                                            style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
+                                            {item}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
 
@@ -2802,24 +3114,18 @@ export default function App() {
                                       <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.anonymousHistoryDesc')}</p>
                                     </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsExpanded(prev => !prev)}
-                                      className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline relative z-10 pointer-events-auto`}
-                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                                    >
-                                      {isExpanded ? t('ui.showLess') : t('ui.viewFullLog')} <ArrowRight className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                                    </button>
+                                    <button className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline`}
+                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" /></button>
                                   </div>
                                   <div className={`p-5 rounded-[2rem] border ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/25 backdrop-blur-3xl border-white/40'}`}>
                                     <div className="space-y-3">
-                                      {(isExpanded ? sessionHistory : sessionHistory.slice(0, 5)).map((session, idx) => {
+                                      {sessionHistory.slice(0, 5).map((session, idx) => {
                                         const score = session.level === 'High' ? '8.1' : session.level === 'Medium' ? '6.2' : '4.8';
                                         return (
                                           <div key={`history-${session.date}-${idx}`}
                                             className={`analytics-glass-card rounded-2xl p-4 flex items-center gap-6 border border-white/40 group hover:bg-white/60 transition-colors ${isDarkMode ? 'dark' : ''}`}>
                                             <div className={`w-24 text-xs font-bold shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{session.date}</div>
+                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{formatSessionDate(session.date)}</div>
                                             <div className="flex-1">
                                               {session.features && (
                                                 <div className="flex h-3 rounded-full overflow-hidden bg-slate-100">
@@ -2891,40 +3197,10 @@ export default function App() {
                                   </div>
                                 )}
                               </section>
-                            </>
-                          )}
-
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </section>
-
-                      </div>
-                    </div>
-
-
-                    <div className="mt-12 pt-8 border-t border-gray-100/20 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-                      <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>{t('results.disclaimer')}</p>
-                      <div className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium ${isDarkMode ? 'bg-green-900/30 text-green-400 border border-green-800/50' : 'bg-green-50 text-green-700'}`}>
-                        <ShieldCheck className="w-4 h-4" />
-                        {t('results.consentConfirmed')}
-                      </div>
-                    </div>
-
-                    <div className="text-center mt-8">
-                      <button
-                        onClick={() => {
-                          setIsSurveyOpen(false);
-                          setIsCompleted(false);
-                          setCurrentStep(1);
-                          setAiResult(null);
-                          setShowAllRecs(false);
-                        }}
-                        className={`font-medium underline underline-offset-4 ${isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-800'}`}
-                      >
-                        {t('results.btnHome')}
-                      </button>
-                    </div>
-
+                    </motion.div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -2954,4 +3230,3 @@ export default function App() {
     </div>
   );
 }
-
