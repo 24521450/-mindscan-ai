@@ -219,6 +219,8 @@ npm run dev
 | `GET` | `/api/admin/stats` | Tong hop thong ke he thong |
 | `GET` | `/api/admin/export` | Export du lieu CSV |
 
+> Tai lieu tuong tac day du co tai `http://localhost:8080/docs` khi backend dang chay.
+
 ---
 
 ## Bien Moi Truong

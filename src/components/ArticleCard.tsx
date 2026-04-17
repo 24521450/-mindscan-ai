@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 
 export interface Article {
   id: string;
@@ -24,11 +24,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onTagClick }) => {
       rel="noopener noreferrer"
       className="group block bg-white dark:bg-slate-900 rounded-2xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl border border-slate-100 dark:border-slate-800"
       whileHover={{ y: -8, boxShadow: "0 12px 32px rgba(0,0,0,0.10)" }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
     >
-      <div className="relative overflow-hidden h-48">
+      <div className="relative overflow-hidden h-80 md:h-[450px]">
         <motion.img
           src={article.thumbnail_img}
           alt={article.title}
@@ -36,8 +33,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onTagClick }) => {
           whileHover={{ scale: 1.08 }}
         />
       </div>
-      <div className="p-5 flex flex-col gap-2">
-        <h3 className="font-bold text-lg text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2">
+      <div className="p-8 flex flex-col gap-4">
+        <h3 className="font-extrabold text-2xl md:text-3xl text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
           {article.title}
         </h3>
         <div className="flex flex-wrap gap-2 mb-1">
@@ -51,11 +48,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onTagClick }) => {
             </button>
           ))}
         </div>
-        <p className="text-slate-600 dark:text-slate-300 text-sm line-clamp-3 mb-2 group-hover:line-clamp-none transition-all">
+        <p className="text-slate-600 dark:text-slate-300 text-base md:text-lg line-clamp-3 mb-2 group-hover:line-clamp-none transition-all">
           {article.summary}
         </p>
         <div className="flex items-center justify-between mt-auto">
-          <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">{article.author}</span>
+          <span className="text-sm text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">{article.author}</span>
         </div>
       </div>
     </motion.a>

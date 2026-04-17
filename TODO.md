@@ -1,36 +1,40 @@
-# Login Flow Improvement - New Tab + Confirmation Modal
+## Fix Syntax Errors in src/App.tsx - Approved Plan Implementation
 
-## Status: ✅ **Complete**
+### Current Progress: 6/8 steps complete
 
-### Step 1: Create TODO.md ✅
+**Step 1: Fix file comment typo and organize imports**
+- [x] Change "lots of errors in appp.tsx" → "App.tsx" ✅
 
-### Step 2: Add confirmation modal & update handlers in src/App.tsx ✅
-```
-- Added `showLoginConfirm: boolean = false` state
-- Added `handleConfirmLogin()`: open new tab + close modal  
-- Added `handleCancelLogin()`: close modal
-- Added confirmation modal JSX (benefits, i18n)
-- Updated login button onClick to show modal
-- Used window.open to '_blank' (new tab)
-```
+**Step 2: Reorder React hooks (move useRef/useState before useEffect)**  
+- [x] Move `radarRef`, `languageMenuRef` declarations to top ✅  
+- [x] Ensure all hooks before any useEffect ✅
 
-### Step 3: Update src/Modern-Login-master/script.js ✅
-```
-- Success handler: `window.close()` → `window.location.href = '/'`
-```
+**Step 3: Fix TypeScript useState generic for formData**
+- [x] Add `<FormData, React.Dispatch<React.SetStateAction<FormData>>>` ✅
 
-### Step 4: Test complete flow ✅
-```
-1. Click login → see confirmation modal
-2. Confirm → new tab opens
-3. Login demo/demo1 → tab redirects to main app
-4. Main tab login state updates (history sync)
-```
+**Step 4: Fix LiquidButton Icon → icon prop reference**
+- [x] Replace `Icon && <Icon className=...` with `icon && <Icon className=...` ✅
 
-### Step 5: Mark complete & cleanup ✅
-```
-- All syntax errors fixed (none found)
-- Login flow improvements complete
-- Ready for production
-```
+**Step 5: Inline t() function earlier or wrap in useCallback**  
+- [x] Move translation helper before first usage ✅
+
+**Step 6: Remove duplicate navigation buttons in results section**  
+- [x] Keep only top-left/right nav; delete bottom duplicates ✅
+
+**Step 7: Fix malformed JSX in results/dashboard/analytics**
+- [ ] Single conditional block for views
+- [ ] Fix pointerEvents + display conflicts
+- [ ] Close all unclosed divs/tags
+
+**Step 8: Add prop guards and fix destructuring**
+- [ ] CustomStackedBar, ActionCard optional props
+- [ ] getFeatureLabel type safety
+
+**Post-edit validation:**
+- [ ] `npm run build` or `tsc --noEmit`
+- [ ] Test survey → results flow
+- [ ] Test dark mode, i18n, charts
+- [ ] attempt_completion
+
+**Next:** Implement Step 1 after confirmation.
 

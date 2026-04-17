@@ -5,7 +5,8 @@ export const translations: Record<string, any> = {
       solutions: "Giải pháp",
       technology: "Công nghệ AI",
       signIn: "Đăng nhập",
-      getStarted: "Bắt đầu"
+      getStarted: "Bắt đầu",
+      about: "Về chúng tôi"
     },
     // Hero
     hero: {
@@ -167,45 +168,152 @@ export const translations: Record<string, any> = {
       medium: "TRUNG BÌNH",
       high: "CAO",
       featureTitle: "Yếu tố tác động (Feature Importance) - Phiên hiện tại",
-      historyTitle: "Lịch sử ẩn danh (Lịch sử stress)",
       recsTitle: "Thẻ hành động (Action Cards)",
       actionCards: {
         sleepTitle: "Ưu tiên giấc ngủ hồi phục",
         sleepDesc: "Chất lượng ngủ hiện tại {score}/5. Hãy cố gắng ngủ đủ 7-8 giờ, hạn chế màn hình 60 phút trước khi ngủ.",
+        sleepSteps: [
+          "Thiết lập khung giờ đi ngủ và thức dậy cố định kể cả cuối tuần.",
+          "Tránh sử dụng thiết bị điện tử ít nhất 45 phút trước khi ngủ.",
+          "Giữ nhiệt độ phòng mát mẻ và hạn chế ánh sáng.",
+          "Thực hiện 5 phút hít thở sâu hoặc thiền nhẹ nhàng."
+        ],
         studyLoadTitle: "Giảm tải học tập thông minh",
         studyLoadDesc: "Khối lượng học tập {score}/5. Chia nhỏ đầu việc và xen kẽ nghỉ 5-10 phút mỗi 50 phút.",
+        studyLoadSteps: [
+          "Liệt kê tất cả bài tập và phân loại theo mức độ ưu tiên.",
+          "Sử dụng kỹ thuật Pomodoro (học 25p, nghỉ 5p).",
+          "Học nhóm để cùng giải quyết các vấn đề khó.",
+          "Dành ít nhất 1 buổi tối cuối tuần không liên quan đến bài vở."
+        ],
         studyFocusTitle: "Củng cố hiệu suất học tập",
         studyFocusDesc: "Kết quả học tập {score}/5. Xác định 1-2 môn ưu tiên và đặt mục tiêu học theo tuần.",
+        studyFocusSteps: [
+          "Tìm không gian học tập yên tĩnh và đủ ánh sáng.",
+          "Loại bỏ các thông báo điện thoại khi đang học.",
+          "Sử dụng sơ đồ tư duy (Mindmap) để ghi nhớ kiến thức.",
+          "Ôn lại bài cũ trong vòng 24h sau khi học trên lớp."
+        ],
         anxietyTitle: "Hạ nhiệt lo âu nhanh",
         anxietyDesc: "Mức lo âu {score}/21. Thử 5 phút thở 4-6-8 hoặc viết ra 3 điều bạn có thể kiểm soát.",
+        anxietySteps: [
+          "Thực hiện bài tập thở 4-7-8 ngay khi cảm thấy lo lắng.",
+          "Viết nhật ký cảm xúc để giải tỏa những suy nghĩ tiêu cực.",
+          "Hạn chế caffeine và các chất kích thích.",
+          "Tập trung vào hiện tại thông qua các giác quan (5-4-3-2-1 technique)."
+        ],
         moodTitle: "Chăm sóc cảm xúc nền",
         moodDesc: "Mức trầm cảm {score}/27. Duy trì hoạt động nhẹ và ngủ đúng giờ để ổn định năng lượng.",
+        moodSteps: [
+          "Dành 15 phút tắm nắng buổi sáng để cải thiện tâm trạng.",
+          "Trò chuyện với một người bạn tin cậy ít nhất 1 lần/tuần.",
+          "Tham gia vào một hoạt động sở thích cũ (vẽ, hát, chơi game).",
+          "Nếu cảm thấy quá tệ, hãy đặt lịch hẹn với chuyên gia tâm lý."
+        ],
         supportTitle: "Kết nối hỗ trợ xã hội",
         supportDesc: "Hỗ trợ xã hội {score}/3. Hãy chia sẻ với bạn thân hoặc nhóm học tập 1 lần trong tuần.",
+        supportSteps: [
+          "Chủ động nhắn tin hỏi thăm một người bạn cũ.",
+          "Tham gia các câu lạc bộ tại trường phù hợp với sở thích.",
+          "Dành thời gian ăn tối cùng gia đình hoặc bạn cùng phòng.",
+          "Yêu cầu sự giúp đỡ cụ thể khi bạn gặp khó khăn."
+        ],
         peerTitle: "Giảm áp lực đồng trang lứa",
         peerDesc: "Áp lực bạn bè {score}/5. Lọc lại ưu tiên cá nhân và đặt ranh giới thời gian.",
+        peerSteps: [
+          "Hạn chế thời gian lướt mạng xã hội (Instagram, Facebook).",
+          "Nhận ra rằng mỗi người đều có lộ trình và tốc độ riêng.",
+          "Tập trung vào tiến bộ của chính mình thay vì so sánh.",
+          "Học cách nói 'không' với những yêu cầu không phù hợp."
+        ],
         bullyingTitle: "Xử lý trải nghiệm bắt nạt",
         bullyingDesc: "Mức bắt nạt {score}/5. Tìm người tin cậy và ghi lại tình huống cụ thể để nhận hỗ trợ.",
+        bullyingSteps: [
+          "Ghi lại bằng chứng hoặc các sự việc cụ thể.",
+          "Báo cáo với cố vấn học tập hoặc phòng công tác sinh viên.",
+          "Tìm kiếm sự đồng hành từ các nhóm hỗ trợ tâm lý.",
+          "Tránh tiếp xúc trực tiếp với đối tượng gây áp lực khi không cần thiết."
+        ],
         activityTitle: "Kích hoạt vận động nhẹ",
         activityDesc: "Hoạt động ngoại khóa {score}/5. Thử đi bộ 15-20 phút hoặc vận động nhẹ mỗi ngày.",
+        activitySteps: [
+          "Đi bộ 20 phút mỗi ngày trong khuôn viên trường.",
+          "Tham gia một lớp yoga hoặc aerobic cơ bản.",
+          "Sử dụng cầu thang bộ thay vì thang máy.",
+          "Dành thời gian tham gia các sự kiện tập thể của khoa/trường."
+        ],
         needsTitle: "Ổn định nhu cầu cơ bản",
         needsDesc: "Điều kiện sống/nhu cầu cơ bản {score}/5. Ưu tiên ăn đủ bữa và sắp xếp lại không gian học.",
+        needsSteps: [
+          "Lập kế hoạch chi tiêu hợp lý trong tuần.",
+          "Đảm bảo ăn đủ 3 bữa với đủ dinh dưỡng.",
+          "Sắp xếp lại phòng ngủ và góc học tập gọn gàng.",
+          "Tìm kiếm các gói hỗ trợ sinh viên nếu gặp khó khăn tài chính."
+        ],
         reliefTitle: "Giảm triệu chứng cơ thể",
         reliefDesc: "Triệu chứng thể chất {score}/5. Uống đủ nước và kéo giãn cổ-vai 2-3 lần/ngày.",
+        reliefSteps: [
+          "Uống ít nhất 2 lít nước mỗi ngày.",
+          "Thực hiện các bài tập giãn cơ cổ và vai sau mỗi giờ học.",
+          "Chườm ấm hoặc tắm nước ấm để giảm căng thẳng cơ bắp.",
+          "Theo dõi tần suất đau đầu để báo cáo cho bác sĩ nếu cần."
+        ],
         topDriverTitle: "Tập trung vào yếu tố mạnh nhất",
         topDriverDesc: "Yếu tố ảnh hưởng lớn: {feature} ({pct}%). Hãy ưu tiên 1 hành động nhỏ cho yếu tố này.",
+        topDriverSteps: [
+          "Phân tích sâu tại sao yếu tố này lại gây stress nhất.",
+          "Dành 30 phút mỗi ngày chỉ để xử lý vấn đề này.",
+          "Tham khảo ý kiến từ người có kinh nghiệm về mảng này.",
+          "Đặt mục tiêu nhỏ và thực tế để cải thiện dần dần."
+        ],
         highStressTitle: "Ưu tiên phục hồi trong 72 giờ",
         highStressDesc: "Mức stress cao. Hãy giảm tối đa lịch dày đặc và đặt lịch nghỉ ngắn mỗi ngày.",
+        highStressSteps: [
+          "Xin nghỉ phép hoặc giảm bớt các đầu việc không khẩn cấp.",
+          "Ngắt kết nối mạng xã hội hoàn toàn trong 24-48 giờ.",
+          "Liên hệ ngay với hotline hỗ trợ tâm lý 1800 599 920.",
+          "Thực hiện các hoạt động thư giãn cực độ như nghe nhạc không lời."
+        ],
         breatheTitle: "Thở sâu để ổn định nhanh",
-        breatheDesc: "Thực hành thở 4-6-8 trong 3-5 phút để giảm căng tức.",
+        breatheDesc: "Thực hành thở 4-7-8 trong 3-5 phút để giảm căng tức.",
+        breatheSteps: [
+          "Ngồi thoải mái, lưng thẳng.",
+          "Hít vào bằng mũi trong 4 giây.",
+          "Nín thở trong 7 giây.",
+          "Thở ra hoàn toàn bằng miệng trong 8 giây."
+        ],
         breaksTitle: "Nghỉ ngắn có chủ đích",
         breaksDesc: "Mỗi 50 phút học, nghỉ 5-10 phút để não hồi phục.",
+        breaksSteps: [
+          "Rời khỏi bàn học khi đến giờ nghỉ.",
+          "Nhìn ra xa vào khoảng xanh hoặc cửa sổ.",
+          "Uống một cốc nước hoặc ăn nhẹ.",
+          "Tránh cầm điện thoại trong lúc nghỉ này."
+        ],
         connectTitle: "Chạm lại với người hỗ trợ",
         connectDesc: "Nhắn tin cho 1 người bạn hoặc cố vấn để chia sẻ trạng thái hôm nay.",
+        connectSteps: [
+          "Chọn một người bạn mà bạn cảm thấy an toàn nhất.",
+          "Bắt đầu bằng lời chào đơn giản.",
+          "Thành thật chia sẻ: 'Dạo này mình thấy hơi áp lực...'.",
+          "Lắng nghe lời khuyên hoặc chỉ đơn giản là sự đồng cảm."
+        ],
         hydrateTitle: "Bù nước và chăm sóc cơ thể",
         hydrateDesc: "Uống 6-8 ly nước trong ngày và hạn chế caffeine muộn.",
+        hydrateSteps: [
+          "Luôn để bình nước trên bàn học.",
+          "Cài ứng dụng nhắc uống nước định kỳ.",
+          "Thay thế nước ngọt bằng nước lọc hoặc nước trái cây.",
+          "Hạn chế uống nhiều nước trước khi đi ngủ 1 tiếng."
+        ],
         weekPlanTitle: "Lập kế hoạch 1 tuần",
-        weekPlanDesc: "Chọn 3 việc quan trọng nhất trong tuần và đặt thời gian cố định."
+        weekPlanDesc: "Chọn 3 việc quan trọng nhất trong tuần và đặt thời gian cố định.",
+        weekPlanSteps: [
+          "Dùng sổ tay hoặc ứng dụng lịch (Google Calendar).",
+          "Điền các mốc thời gian cố định (giờ học, giờ ăn).",
+          "Chèn các khoảng 'thời gian trống' cho bản thân.",
+          "Chỉ nên đặt tối đa 3 đầu việc quan trọng mỗi ngày."
+        ]
       },
       insightTitle: "Tổng hợp kết quả khảo sát",
       trendsTitle: "Xu hướng nổi bật",
@@ -261,13 +369,16 @@ export const translations: Record<string, any> = {
       details: "Chi tiết",
       predictionOutput: "Đầu ra dự báo",
       languageSwitcher: "Đổi ngôn ngữ",
+      noStepsAvailable: "Đang cập nhật các bước thực hiện...",
       dataModule: "Mô-đun dữ liệu",
+      backToDashboard: "Quay lại Bảng điều khiển",
+      toAnalytics: "Xem Phân tích chuyên sâu",
       module: { dashboard: "Bảng điều khiển", analytics: "Phân tích" },
       toggleDarkMode: "Chuyển chế độ sáng/tối",
       live: "TRỰC TIẾP",
       weekly: "Theo tuần",
       monthly: "Theo tháng",
-      campusAvg: "Trung bình campus",
+      campusAvg: "Trung bình sinh viên thế giới",
       yourStress: "Mức stress của bạn",
       you: "Bạn",
       day: "Ngày",
@@ -284,8 +395,6 @@ export const translations: Record<string, any> = {
       prominentTrends: "Các xu hướng tinh thần nổi bật",
       prominentTrendsFallback: "Mẫu stress được tổng hợp từ dữ liệu đánh giá của bạn.",
       criticalTouchpoints: "Các yếu tố cần lưu ý",
-      anonymousHistoryDesc: "Phân bố stress tổng hợp theo thời gian",
-      viewFullLog: "Xem toàn bộ lịch sử",
       recommendedActions: "Hành động khuyến nghị",
       recommendedActionsDesc: "Các can thiệp phù hợp với đặc điểm stress của bạn.",
       showLess: "Thu gọn",
@@ -300,8 +409,8 @@ export const translations: Record<string, any> = {
         stressTrend: "Xu hướng stress",
         stressTrendDesc: "Biến động stress theo thời gian so với mức trung bình campus",
         moodCalendar: "Lịch cảm xúc",
-        peerComparison: "So sánh đồng đẳng",
-        peerComparisonDesc: "Mức độ thói quen của bạn so với trung bình campus"
+        peerComparison: "So sánh đồng trang lứa",
+        peerComparisonDesc: "Mức độ thói quen của bạn so với trung bình sinh viên thế giới"
       },
       resultsPanel: {
         title: "Phân tích sức khỏe sinh viên và kế hoạch hành động",
@@ -310,7 +419,85 @@ export const translations: Record<string, any> = {
         stressLoad: "Tải stress",
         stressLoadDesc: "Chỉ dấu sinh lý theo thời gian thực"
       },
-      calendar: { mon: "T2", tue: "T3", wed: "T4", thu: "T5", fri: "T6", sat: "T7", sun: "CN" }
+      calendar: { mon: "T2", tue: "T3", wed: "T4", thu: "T5", fri: "T6", sat: "T7", sun: "CN" },
+      auth: {
+        signInTitle: "Đăng nhập",
+        signInSubtitle: "Để giữ kết nối với chúng tôi, vui lòng đăng nhập bằng thông tin cá nhân của bạn",
+        signUpTitle: "Tạo tài khoản",
+        signUpSubtitle: "Đăng ký với thông tin cá nhân của bạn để sử dụng tất cả các tính năng của trang web",
+        emailPlaceholder: "Email",
+        passwordPlaceholder: "Mật khẩu",
+        namePlaceholder: "Họ và tên",
+        signInBtn: "Đăng nhập",
+        signUpBtn: "Đăng ký",
+        demoNotice: "Sử dụng demo/demo1 để đăng nhập",
+        errorInvalid: "Thông tin không chính xác. Thử demo/demo1",
+        fillAll: "Vui lòng điền đầy đủ thông tin để đăng ký.",
+        welcomeBack: "Chào mừng trở lại!",
+        helloFriend: "Chào bạn!"
+      }
+    },
+    about: {
+      title: " ABOUT US – “Chúng tôi đã từng như bạn”",
+      subtitle: "Chúng tôi là đội ngũ tâm huyết mong muốn mang lại giải pháp công nghệ cho sức khỏe tinh thần sinh viên.",
+      missionTitle: "Sứ mệnh của chúng tôi",
+      missionDesc: "Mindscan AI được xây dựng để giúp sinh viên nhận diện sớm các dấu hiệu stress thông qua dữ liệu, từ đó có hướng cải thiện kịp thời.",
+      valuesTitle: "Giá trị cốt lõi",
+      values: [
+        "Thấu hiểu & Đồng cảm",
+        "Dữ liệu tin cậy",
+        "Bảo mật tuyệt đối",
+        "Cộng đồng hỗ trợ"
+      ],
+      journeyTitle: "Hành trình của chúng tôi",
+      journeyDesc: "Bắt đầu từ những trăn trở của chính những người trong cuộc, chúng tôi đã xây dựng Mindscan AI như một người bạn đồng hành số.",
+      stats: {
+        users: "10K+",
+        latency: "<200ms",
+        commits: "500+"
+      },
+      story: [
+        {
+          h: "Một đêm bình thường (hoặc không)",
+          p: ["Bạn đang nằm trên giường.", "Điện thoại vẫn sáng.", "3:12 AM.", "Không có thông báo nào mới.", "Nhưng bạn vẫn kéo xuống. Refresh. Lại kéo.", "Một video. Một story. Một bài đăng.", "Ai cũng có vẻ ổn.", "Còn bạn thì không.", "“Chắc mình đang làm quá lên thôi…”", "“Ai cũng stress mà…”", "“Mai là ổn thôi…”", "Nhưng bạn biết là… không ổn."],
+          q: "Bạn đã từng như vậy chưa?",
+          opts: ["Có", "Không chắc", "Không muốn nghĩ tới"]
+        },
+        {
+          h: "Không ai dạy bạn cách chịu đựng",
+          p: ["Bạn lớn lên với việc học cách cố gắng.", "Nhưng không ai dạy bạn cách dừng lại.", "Khi bạn kiệt sức → bạn cố thêm chút nữa", "Khi bạn buồn → bạn tự nhủ “rồi sẽ qua thôi”", "Khi bạn mất phương hướng → bạn giả vờ ổn", "Bạn học cách đối phó,", "chứ không phải hiểu bản thân.", "Một ngày nào đó…", "Bạn nhận ra:", "Mình không biết mình đang cảm thấy gì nữa."],
+          q: "Bạn từng mất kết nối với chính mình chưa?",
+          btn: "Bấm tiếp"
+        },
+        {
+          h: "Và rồi chúng tôi gặp nhau",
+          p: ["Không phải trong một nơi hoàn hảo.", "Không phải với một kế hoạch rõ ràng.", "Chỉ là vài người…", "đang vật lộn theo những cách rất riêng:", "Một người burnout vì học + làm", "Một người mất định hướng sau khi fail", "Một người cười rất nhiều… nhưng tối nào cũng trống rỗng", "Một người luôn giúp người khác, nhưng không biết tự giúp mình", "Chúng tôi không bắt đầu bằng việc “giải quyết vấn đề”.", "Chúng tôi bắt đầu bằng việc…", "lắng nghe nhau."],
+          q: "Bạn có ai để thật sự lắng nghe chưa?",
+          btn: "Bấm tiếp"
+        },
+        {
+          h: "Điều tụi mình nhận ra",
+          p: ["Không phải tụi mình yếu.", "Mà là tụi mình chưa từng được hiểu đúng.", "Mental health với tụi mình không phải là:", "❌ “Phải luôn tích cực”", "❌ “Phải mạnh mẽ”", "❌ “Phải ổn định mọi lúc”", "Mà là:", "✔️ Được phép không ổn", "✔️ Được hiểu cảm xúc của mình", "✔️ Được có không gian để… tồn tại đúng nghĩa"],
+          q: "Nếu có một nơi như vậy, bạn có muốn thử không?",
+          btn: "Bấm tiếp"
+        },
+        {
+          h: "Dự án này ra đời như thế nào",
+          p: ["Không phải từ một ý tưởng “startup”.", "Mà từ một câu hỏi rất đơn giản:", "“Nếu tụi mình đã từng cần một nơi như vậy… thì người khác chắc cũng vậy?”", "Và tụi mình bắt đầu:", "Viết ra những gì tụi mình từng trải qua", "Thiết kế những trải nghiệm mà tụi mình từng cần", "Xây một nơi không phán xét, không áp lực", "Không phải để “chữa lành” bạn.", "Mà để…", "bạn hiểu chính mình hơn một chút mỗi ngày."],
+          btn: "Khám phá dự án"
+        }
+      ],
+      final: {
+        title: "Mindscan AI – Đồng hành cùng tâm trí bạn",
+        desc: "Dự án được xây dựng dựa trên mô hình XGBoost với độ chính xác 92.4%, giúp bạn nhận diện các tín hiệu stress từ sớm.",
+        missionTitle: "Sứ mệnh",
+        missionDesc: "Biến dữ liệu khô khan thành lộ trình thấu hiểu bản thân.",
+        contactTitle: "Liên lạc với tụi mình",
+        contactDesc: "Email: contact@mindscan.ai | Hotline: 1800 599 920"
+      },
+      teamTitle: "Đội ngũ phát triển",
+      btnBack: "Quay về trang chủ",
+      viewGithub: "Xem mã nguồn trên GitHub"
     }
   },
 
@@ -320,7 +507,8 @@ export const translations: Record<string, any> = {
       solutions: "Solutions",
       technology: "Technology",
       signIn: "Sign In",
-      getStarted: "Get Started"
+      getStarted: "Get Started",
+      about: "About Us"
     },
     hero: {
       badge: "RESEARCH-BASED AI",
@@ -475,7 +663,6 @@ export const translations: Record<string, any> = {
       medium: "MEDIUM",
       high: "HIGH",
       featureTitle: "Feature Importance - Current Session",
-      historyTitle: "Anonymous History (Stress Trends)",
       recsTitle: "Action Cards",
       actionCards: {
         sleepTitle: "Prioritize restorative sleep",
@@ -569,6 +756,8 @@ export const translations: Record<string, any> = {
       details: "Details",
       predictionOutput: "Prediction output",
       languageSwitcher: "Switch language",
+      backToDashboard: "Back to Dashboard",
+      toAnalytics: "View Analytics",
       dataModule: "Data Module",
       module: { dashboard: "Dashboard", analytics: "Analytics" },
       toggleDarkMode: "Toggle dark mode",
@@ -592,8 +781,6 @@ export const translations: Record<string, any> = {
       prominentTrends: "Prominent Trends",
       prominentTrendsFallback: "Stress patterns tracked from your assessment data.",
       criticalTouchpoints: "Critical Touchpoints",
-      anonymousHistoryDesc: "Aggregated stress distribution over time",
-      viewFullLog: "View Full Log",
       recommendedActions: "Recommended Actions",
       recommendedActionsDesc: "Curated interventions based on your unique stress vectors.",
       showLess: "Show less",
@@ -618,7 +805,85 @@ export const translations: Record<string, any> = {
         stressLoad: "Stress Load",
         stressLoadDesc: "Real-time physiological proxy"
       },
-      calendar: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
+      calendar: { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" },
+      auth: {
+        signInTitle: "Sign In",
+        signInSubtitle: "To keep connected with us please login with your personal info",
+        signUpTitle: "Create Account",
+        signUpSubtitle: "Register with your personal details to use all of site features",
+        emailPlaceholder: "Email",
+        passwordPlaceholder: "Password",
+        namePlaceholder: "Name",
+        signInBtn: "Sign In",
+        signUpBtn: "Sign Up",
+        demoNotice: "Use demo/demo1 to sign in",
+        errorInvalid: "Invalid credentials. Try demo/demo1",
+        fillAll: "Please fill in all information to register.",
+        welcomeBack: "Welcome Back!",
+        helloFriend: "Hello, Friend!"
+      }
+    },
+    about: {
+      title: "🌙 ABOUT US – “We used to be like you”",
+      subtitle: "We are a dedicated team aiming to bring technological solutions to student mental health.",
+      missionTitle: "Our Mission",
+      missionDesc: "Mindscan AI was built to help students identify early signs of stress through data, enabling timely improvements.",
+      valuesTitle: "Core Values",
+      values: [
+        "Understanding & Empathy",
+        "Reliable Data",
+        "Absolute Privacy",
+        "Supportive Community"
+      ],
+      journeyTitle: "Our Journey",
+      journeyDesc: "Starting from the concerns of those involved, we built Mindscan AI as a digital companion.",
+      stats: {
+        users: "10K+",
+        latency: "<200ms",
+        commits: "500+"
+      },
+      story: [
+        {
+          h: "A normal night (or not)",
+          p: ["You're lying in bed.", "Phone is still on.", "3:12 AM.", "No new notifications.", "But you still scroll. Refresh. Scroll again.", "A video. A story. A post.", "Everyone seems fine.", "But you don't.", "“Maybe I'm just overreacting…”", "“Everyone is stressed…”", "“It'll be fine tomorrow…”", "But you know... it's not."],
+          q: "Have you ever been there?",
+          opts: ["Yes", "Not sure", "Don't want to think about it"]
+        },
+        {
+          h: "No one taught you how to endure",
+          p: ["You grew up learning to try hard.", "But no one taught you how to stop.", "When you're exhausted → you try a bit more", "When you're sad → you tell yourself “it'll pass”", "When you're lost → you pretend to be fine", "You learn to cope,", "not to understand yourself.", "One day...", "You realize:", "I don't know what I'm feeling anymore."],
+          q: "Have you ever lost connection with yourself?",
+          btn: "Next"
+        },
+        {
+          h: "And then we met",
+          p: ["Not in a perfect place.", "Not with a clear plan.", "Just a few people...", "struggling in very private ways:", "One burnout from work + study", "One lost after failing", "One smiles a lot... but feels empty every night", "One always helps others, but doesn't know how to help themselves", "We didn't start by “solving problems”.", "We started by...", "listening to each other."],
+          q: "Do you have someone to truly listen to you?",
+          btn: "Next"
+        },
+        {
+          h: "What we realized",
+          p: ["It's not that we're weak.", "It's that we were never understood correctly.", "Mental health to us isn't about:", "❌ “Must always be positive”", "❌ “Must be strong”", "❌ “Must be stable at all times”", "But about:", "✔️ Being allowed to be not okay", "✔️ Understanding your own emotions", "✔️ Having a space to... truly exist"],
+          q: "If there was such a place, would you want to try?",
+          btn: "Next"
+        },
+        {
+          h: "How this project was born",
+          p: ["Not from a “startup” idea.", "But from a simple question:", "“If we once needed such a place... maybe others do too?”", "And we started:", "Writing down what we experienced", "Designing experiences we once needed", "Building a place without judgment, without pressure", "Not to “heal” you.", "But to...", "help you understand yourself a bit more every day."],
+          btn: "Explore Project"
+        }
+      ],
+      final: {
+        title: "Mindscan AI – Accompanying your mind",
+        desc: "Project built on XGBoost model with 92.4% accuracy, helping you identify stress signals early.",
+        missionTitle: "Mission",
+        missionDesc: "Transforming dry data into a roadmap for self-understanding.",
+        contactTitle: "Contact us",
+        contactDesc: "Email: contact@mindscan.ai | Hotline: 1800 599 920"
+      },
+      teamTitle: "Development Team",
+      btnBack: "Back to Home",
+      viewGithub: "View Source on GitHub"
     }
   },
 
@@ -783,7 +1048,6 @@ export const translations: Record<string, any> = {
       medium: "MOYEN",
       high: "ELEVE",
       featureTitle: "Importance des facteurs - Session actuelle",
-      historyTitle: "Historique anonyme (tendance du stress)",
       recsTitle: "Cartes d'action",
       actionCards: {
         sleepTitle: "Prioriser un sommeil reparateur",
@@ -900,8 +1164,6 @@ export const translations: Record<string, any> = {
       prominentTrends: "Tendances marquantes",
       prominentTrendsFallback: "Modeles de stress identifies a partir de vos donnees d'evaluation.",
       criticalTouchpoints: "Points de contact critiques",
-      anonymousHistoryDesc: "Distribution agregee du stress dans le temps",
-      viewFullLog: "Voir l'historique complet",
       recommendedActions: "Actions recommandees",
       recommendedActionsDesc: "Interventions ciblees selon vos vecteurs de stress.",
       showLess: "Afficher moins",
@@ -1091,7 +1353,6 @@ export const translations: Record<string, any> = {
       medium: "MITTEL",
       high: "HOCH",
       featureTitle: "Einflussfaktoren - Aktuelle Sitzung",
-      historyTitle: "Anonymer Verlauf (Stress-Trend)",
       recsTitle: "Handlungsempfehlungen",
       actionCards: {
         sleepTitle: "Erholsamen Schlaf priorisieren",
@@ -1208,8 +1469,6 @@ export const translations: Record<string, any> = {
       prominentTrends: "Zentrale Trends",
       prominentTrendsFallback: "Stressmuster aus Ihren Bewertungsdaten.",
       criticalTouchpoints: "Kritische Einflussfaktoren",
-      anonymousHistoryDesc: "Aggregierte Stressverteilung über die Zeit",
-      viewFullLog: "Vollständiges Protokoll",
       recommendedActions: "Empfohlene Maßnahmen",
       recommendedActionsDesc: "Kuratiere Maßnahmen auf Basis Ihrer Stressmuster.",
       showLess: "Weniger anzeigen",
@@ -1399,7 +1658,6 @@ export const translations: Record<string, any> = {
       medium: "中等",
       high: "高",
       featureTitle: "特征重要性 - 当前会话",
-      historyTitle: "匿名记录 (压力趋势)",
       recsTitle: "行动卡片",
       actionCards: {
         sleepTitle: "优先恢复性睡眠",
@@ -1516,8 +1774,6 @@ export const translations: Record<string, any> = {
       prominentTrends: "关键趋势",
       prominentTrendsFallback: "根据您的评估数据提炼出的压力模式。",
       criticalTouchpoints: "关键触点",
-      anonymousHistoryDesc: "随时间变化的压力汇总分布",
-      viewFullLog: "查看完整记录",
       recommendedActions: "建议行动",
       recommendedActionsDesc: "基于您的压力向量定制的干预建议。",
       showLess: "收起",

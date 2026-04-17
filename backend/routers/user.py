@@ -8,7 +8,6 @@ from ..models import Session, Response, Prediction, Recommendation
 from ..schemas import SessionResponse, SurveyInput, SurveySubmissionResponse, HistoryResponse, RecommendationResponse
 from ..services.ml_service import predict_stress
 from ..services.recommendation_service import generate_recommendations
-import json
 
 router = APIRouter(prefix="/api", tags=["User Endpoints"])
 

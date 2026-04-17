@@ -37,7 +37,8 @@ import {
   TrendingUp,
   Calendar,
   GitCompare,
-  X
+  X,
+  Printer
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -46,9 +47,11 @@ import {
 } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { Player } from '@lottiefiles/react-lottie-player';
-import { analyzeSurveyData, AIRecommendation, featureLabels } from './services/geminiService';
+import { analyzeSurveyData } from './services/geminiService';
+import type { AIRecommendation } from './types';
 import { translations } from './translations';
-import { ArticleSection } from './components';
+import ArticleSection from './components/ArticleSection';
+
 
 const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confidence: number, t?: (key: string) => string, isDarkMode?: boolean }) => {
   // Arc progress: Low=25%, Medium=55%, High=85% of the arc
@@ -68,10 +71,10 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
   const largeArc = 0;
   const arcPath = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
 
-  const levelDisplay = t
-    ? (level === 'Low' ? t('results.low') : level === 'Medium' ? t('results.medium') : t('results.high'))
-    : (level === 'Low' ? 'Low' : level === 'Medium' ? 'Medium' : 'High');
-  const levelColor = level === 'Low' ? '#006b60' : level === 'Medium' ? '#006b60' : '#a53173';
+  const levelDisplay = (typeof t === 'function')
+    ? (level === 'Low' ? t('results.low') : level === 'Medium' ? t('results.medium') : (level === 'High' ? t('results.high') : ''))
+    : (level === 'Low' ? 'Low' : level === 'Medium' ? 'Medium' : (level === 'High' ? 'High' : ''));
+  const levelColor = level === 'Low' ? '#006b60' : level === 'Medium' ? '#6e3bd8' : '#a53173';
 
   return (
     <div className="flex flex-col items-center">
@@ -120,51 +123,29 @@ const GaugeChart = ({ level, confidence, t, isDarkMode }: { level: string, confi
   );
 };
 
-
-// Fallback palette for history entries that may have been saved without colors
-const BAR_FALLBACK_COLORS = ['#6ee7b7', '#2dd4bf', '#c084fc', '#94a3b8', '#fb7185', '#fbbf24', '#60a5fa', '#a78bfa'];
-
-const CustomStackedBar = ({ data, height = 'h-12', showLabels = true }: { data: any[], height?: string, showLabels?: boolean }) => {
-  const total = data.reduce((sum: number, item: any) => sum + item.importance, 0);
-  if (!total) return <div className={`flex w-full ${height} rounded-2xl bg-gray-100`} />;
+const ActionCard = ({ id, title, description, icon: Icon, colorClass, isBookmarked, onBookmark, bookmarkAriaLabel, detailsLabel, onDetailClick, isDarkMode }: { id: string, title: string, description: string, icon: any, colorClass: string, isBookmarked: boolean, onBookmark: (e: React.MouseEvent) => void, bookmarkAriaLabel: string, detailsLabel: string, onDetailClick: () => void, isDarkMode: boolean }) => {
   return (
-    <div className={`flex w-full ${height} rounded-2xl overflow-hidden shadow-[inset_0_2px_10px_rgba(0,0,0,0.05)] bg-gray-100/50 p-1 gap-1 backdrop-blur-sm`}>
-      {data.map((item: any, idx: number) => {
-        // Use saved color, but fall back to palette if missing or nearly-white
-        const color = (!item.color || item.color === '#f3f4f6') ? BAR_FALLBACK_COLORS[idx % BAR_FALLBACK_COLORS.length] : item.color;
-        return (
-          <div
-            key={`${item.feature}-${idx}`}
-            style={{ width: `${(item.importance / total) * 100}%`, backgroundColor: color }}
-            className="h-full flex items-center justify-center text-white font-bold text-sm rounded-xl relative overflow-hidden group"
-            title={`${item.feature}: ${item.importance}%`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <span className="relative z-10 drop-shadow-md">{showLabels && item.importance > 8 ? item.importance : ''}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-
-const ActionCard = ({ title, description, icon: Icon, colorClass, isBookmarked, onBookmark, bookmarkAriaLabel, detailsLabel }: { id: string, title: string, description: string, icon: any, colorClass: string, isBookmarked: boolean, onBookmark: (e: React.MouseEvent) => void, bookmarkAriaLabel: string, detailsLabel: string, key?: string }) => {
-  return (
-    <div className="analytics-glass-card dark:bg-slate-800/50 border border-white/50 dark:border-white/10 shadow-[0_8px_24px_rgba(45,51,55,0.06)] rounded-[2rem] overflow-hidden p-6 flex flex-col h-full transition-all duration-300 hover:-translate-y-2 group">
-      <div className="flex-1">
-        <h4 className="text-base font-bold bg-gradient-to-r from-black to-slate-800 bg-clip-text text-transparent dark:text-slate-100 dark:bg-none mb-2"
-          style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{title}</h4>
-        <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-4"
+    <div onClick={onDetailClick} className="analytics-glass-card dark:bg-slate-800/50 border border-white/50 dark:border-white/10 shadow-[0_12px_32px_rgba(45,51,55,0.1)] rounded-[2.5rem] overflow-hidden p-8 flex flex-col items-center text-center h-full transition-all duration-300 hover:-translate-y-2 group cursor-pointer w-full max-w-md">
+      <div className="flex-1 w-full" onClick={(e) => e.stopPropagation()}>
+        <h4
+          className={`text-2xl font-extrabold mb-4 ${isDarkMode ? 'text-white' : 'text-black'}`}
+          style={{ 
+            fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+            color: isDarkMode ? '#ffffff' : '#000000'
+          }}
+        >
+          {title}
+        </h4>
+        <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed line-clamp-4"
           style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
           {description}
         </p>
       </div>
       <div className="mt-6 flex items-center justify-between">
-        <span className={`text-[10px] font-bold uppercase tracking-widest ${isBookmarked ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'}`}
+        <button onClick={(e) => { e.stopPropagation(); onDetailClick(); }} className={`text-[10px] font-bold uppercase tracking-widest hover:underline ${isBookmarked ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'}`}
           style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
           {detailsLabel}
-        </span>
+        </button>
         <button
           onClick={onBookmark}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 border
@@ -212,7 +193,7 @@ const LiquidButton = ({ children, onClick, variant = 'primary', className = "", 
 export default function App() {
   const [hasConsented, setHasConsented] = useState(false);
   const [showMotivational, setShowMotivational] = useState(false);
-  const [language, setLanguage] = useState<'vi' | 'en' | 'de' | 'zh' | 'fr'>('en');
+  const [language, setLanguage] = useState<'vi' | 'en' | 'de' | 'zh' | 'fr'>(() => (localStorage.getItem('mindscan_language') as any) || 'vi');
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isSurveyOpen, setIsSurveyOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -222,6 +203,8 @@ export default function App() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showEthicsModal, setShowEthicsModal] = useState(false);
   const [showTechnologyModal, setShowTechnologyModal] = useState(false);
+  const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
+  const [aboutStep, setAboutStep] = useState(0);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [bookmarkedRecs, setBookmarkedRecs] = useState<string[]>(() => {
@@ -231,10 +214,11 @@ export default function App() {
   const [sessionHistory, setSessionHistory] = useState<any[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
   const [showAllRecs, setShowAllRecs] = useState(false);
+  const [selectedActionDetail, setSelectedActionDetail] = useState<ActionCardItem | null>(null);
   const [stepError, setStepError] = useState<string>('');
   const [activeDataModule, setActiveDataModule] = useState<'dashboard' | 'analytics'>('dashboard');
   const [stressTrendPeriod, setStressTrendPeriod] = useState<'weekly' | 'monthly'>('weekly');
-const [radarAnimated, setRadarAnimated] = useState(false);
+  const [radarAnimated, setRadarAnimated] = useState(false);
   const [heroVariant, setHeroVariant] = useState<1 | 2>(2);
   const [earthRotation, setEarthRotation] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => !!localStorage.getItem('mindscan_currentUser'));
@@ -244,14 +228,14 @@ const [radarAnimated, setRadarAnimated] = useState(false);
     return stored ? JSON.parse(stored) : null;
   });
 
-// Modern login handlers
+  // Modern login handlers
   const handleShowLoginConfirm = () => {
     setShowLoginConfirm(true);
   };
 
   const handleConfirmLogin = () => {
-const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.html';
-    window.open(modernLoginUrl, '_blank', 'noopener,noreferrer');
+    const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.html';
+    window.location.assign(modernLoginUrl);
     setShowLoginConfirm(false);
   };
 
@@ -285,6 +269,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
 
   useEffect(() => {
     document.documentElement.lang = language;
+    localStorage.setItem('mindscan_language', language);
   }, [language]);
 
   // Prevent body scroll when modal is open
@@ -320,6 +305,11 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
     }, 2666);
     return () => clearInterval(interval);
   }, [heroVariant]);
+
+  // Tự động cuộn lên đầu trang khi chuyển đổi các trạng thái xem chính hoặc bước khảo sát
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [isSurveyOpen, isAboutUsOpen, isCompleted, currentStep, aboutStep, activeDataModule]);
 
   const languageSwitcher = (
     <div className="relative group/lang">
@@ -364,7 +354,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
   );
 
   // Translation helper
-  const t = (key: string): string => {
+  const t = (key: string): any => {
     const keys = key.split('.');
     let result: any = translations[language];
     for (const k of keys) {
@@ -382,9 +372,20 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
         return typeof fallback === 'string' ? fallback : key;
       }
     }
-    return typeof result === 'string' ? result : key;
+    return (typeof result === 'string' || Array.isArray(result)) ? result : key;
   };
-
+const featureLabels: Record<string, Record<string, string>> = {
+    sleep_quality:              { vi: 'Chất lượng giấc ngủ',   en: 'Sleep Quality',           fr: 'Qualité du sommeil',    de: 'Schlafqualität',      zh: '睡眠质量' },
+    study_load:                 { vi: 'Áp lực học tập',        en: 'Study Load',              fr: 'Charge de travail',     de: 'Lernbelastung',       zh: '学习负担' },
+    anxiety_level:              { vi: 'Mức độ lo âu',          en: 'Anxiety Level',           fr: 'Niveau d\'anxiété',     de: 'Angstniveau',         zh: '焦虑程度' },
+    social_support:             { vi: 'Hỗ trợ xã hội',        en: 'Social Support',          fr: 'Soutien social',        de: 'Soziale Unterstützung',zh: '社会支持' },
+    academic_performance:       { vi: 'Kết quả học tập',      en: 'Academic Performance',    fr: 'Performance scolaire',  de: 'Schulleistung',       zh: '学业表现' },
+    depression:                 { vi: 'Trầm cảm',              en: 'Depression',              fr: 'Dépression',            de: 'Depression',          zh: '抑郁' },
+    self_esteem:                { vi: 'Tự trọng',              en: 'Self Esteem',             fr: 'Estime de soi',         de: 'Selbstwertgefühl',    zh: '自尊' },
+    peer_pressure:              { vi: 'Áp lực bạn bè',        en: 'Peer Pressure',           fr: 'Pression des pairs',    de: 'Gruppendruck',        zh: '同伴压力' },
+    extracurricular_activities: { vi: 'Hoạt động ngoại khóa', en: 'Extracurricular Activities',fr:'Activités parascolaires',de: 'Außerschulische Aktivitäten',zh:'课外活动'},
+    basic_needs:                { vi: 'Nhu cầu cơ bản',       en: 'Basic Needs',             fr: 'Besoins de base',       de: 'Grundbedürfnisse',    zh: '基本需求' },
+  };
   const getFeatureLabel = (keyObj: string) => {
     if (featureLabels[keyObj]) {
       return (featureLabels[keyObj] as any)[language] || keyObj;
@@ -411,8 +412,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
     anxiety_level: 0,
     depression: 0,
     self_esteem: 0,
-    mental_health_history: 'no',
-    // Step 3: Physical
+mental_health_history: 'no' as 'yes' | 'no',    // Step 3: Physical
     blood_pressure: 0,
     sleep_quality: 0,
     headache: 0,
@@ -450,41 +450,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
       sid = 'sess_' + Math.random().toString(36).substring(2, 11);
       localStorage.setItem('mindscan_session_id', sid);
     }
-    setSessionId(sid);
-
-    const history = localStorage.getItem(`mindscan_history_${sid}`);
-    if (history) {
-      setSessionHistory(JSON.parse(history));
-    } else {
-      // Dummy history uses raw feature keys so getFeatureLabel() can translate them
-      const dummyHistory = [
-        {
-          date: '2026-03-10',
-          stressScore: 30,
-          level: 'Low',
-          features: [
-            { feature: 'sleep_quality', importance: 40, color: '#6ee7b7' },
-            { feature: 'study_load', importance: 30, color: '#2dd4bf' },
-            { feature: 'social_support', importance: 20, color: '#c084fc' },
-            { feature: 'extracurricular_activities', importance: 5, color: '#cbd5e1' },
-            { feature: 'basic_needs', importance: 5, color: '#fb7185' },
-          ]
-        },
-        {
-          date: '2026-03-12',
-          stressScore: 60,
-          level: 'Medium',
-          features: [
-            { feature: 'sleep_quality', importance: 20, color: '#6ee7b7' },
-            { feature: 'study_load', importance: 40, color: '#2dd4bf' },
-            { feature: 'social_support', importance: 15, color: '#c084fc' },
-            { feature: 'extracurricular_activities', importance: 10, color: '#cbd5e1' },
-            { feature: 'basic_needs', importance: 15, color: '#fb7185' },
-          ]
-        }
-      ];
-      setSessionHistory(dummyHistory);
-    }
+    
   }, []);
 
   const saveToHistory = (result: AIRecommendation) => {
@@ -495,11 +461,12 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
       level: result.stress_level,
       features: result.feature_importance
     };
-    setSessionHistory(prev => {
-      const updated = [...prev, newEntry];
-      localStorage.setItem(`mindscan_history_${sessionId}`, JSON.stringify(updated));
-      return updated;
-    });
+    const sid = localStorage.getItem('mindscan_session_id') || 'default';
+    const historyKey = `mindscan_history_${sid}`;
+    const existing = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    existing.push(newEntry);
+    if (existing.length > 30) existing.shift();
+    localStorage.setItem(historyKey, JSON.stringify(existing));
   };
 
   // Format a stored ISO date string (YYYY-MM-DD) using the current locale
@@ -557,7 +524,11 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
       setIsAnalyzing(true);
       setIsCompleted(true);
       try {
-        const result = await analyzeSurveyData(formData, language);
+        // Chạy song song: gọi API và bộ đếm giờ 3 giây (3000ms)
+        const [result] = await Promise.all([
+          analyzeSurveyData(formData, language),
+          new Promise(resolve => setTimeout(resolve, 3000))
+        ]);
 
         // Colors and display names are already mapped by geminiService.ts.
         // No re-mapping needed here — just set the result directly.
@@ -912,6 +883,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             key={language}
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
             className={`relative backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-[2rem] overflow-hidden p-8 md:p-10 max-w-lg w-full text-center ${isDarkMode ? 'bg-[#0b132b]/80 border-white/10' : 'bg-white/95 border border-gray-200'}`}
+            onClick={e => e.stopPropagation()}
           >
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'}`}>
               <AlertTriangle className="w-10 h-10" />
@@ -999,6 +971,393 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             </div>
           </motion.div>
         </div>
+      )}
+    </AnimatePresence>
+  );
+
+  const renderActionDetailModal = () => (
+    <AnimatePresence>
+      {selectedActionDetail && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-md" onClick={() => setSelectedActionDetail(null)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className={`relative max-w-lg w-full rounded-[2.5rem] p-8 md:p-10 shadow-2xl ${isDarkMode ? 'bg-slate-900 border border-white/10' : 'bg-white border border-slate-100'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={() => setSelectedActionDetail(null)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            
+            <h3
+              className={`text-2xl font-bold mb-4 pr-8 ${isDarkMode ? 'text-white' : 'text-black'}`}
+              style={{ 
+                fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+                color: isDarkMode ? '#ffffff' : '#000000'
+              }}
+            >
+              {selectedActionDetail.title}
+            </h3>
+            
+            <p className={`mb-8 text-base leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              {selectedActionDetail.description}
+            </p>
+
+            <div className="space-y-4">
+              <h4 className={`text-sm font-bold uppercase tracking-widest ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                Các bước thực hiện:
+              </h4>
+              <ul className="space-y-4">
+                {(Array.isArray(t(`results.actionCards.${selectedActionDetail.id.replace('backend-','').replace('auto-','')}.steps`)) ? t(`results.actionCards.${selectedActionDetail.id.replace('backend-','').replace('auto-','')}.steps`) : [t('ui.noStepsAvailable')]).map((step: string, i: number) => (
+                  <li key={i} className="flex items-start gap-4">
+                    <div className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 text-xs font-bold border border-blue-500/20">
+                      {i + 1}
+                    </div>
+                    <span className={`text-sm font-medium ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{step}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+
+  const storyImages = [
+    { left: 'https://i.pinimg.com/736x/b3/dc/58/b3dc58d9bc7b9fc53a30c0a4b5bc17ec.jpg', right: 'https://i.pinimg.com/736x/c7/5e/16/c75e1650a383ffe2fa22f69eb525531d.jpg' },
+    { left: 'https://i.pinimg.com/736x/59/c2/8b/59c28b1457131a05c774bfe1c8748cfd.jpg', right: 'https://i.pinimg.com/736x/8c/43/2f/8c432fafbd07aefbd3bcf859a672ecd5.jpg' },
+    { left: 'https://i.pinimg.com/736x/2c/8a/ce/2c8acee322ec18137784f4ef5d5a56df.jpg', right: 'https://i.pinimg.com/736x/1c/ae/f2/1caef2a05317337dffd7c8d05b310106.jpg' },
+    { left: 'https://i.pinimg.com/736x/b0/81/0d/b0810da700287881d54bfcf9d75fecca.jpg', right: 'https://i.pinimg.com/736x/a4/1b/66/a41b66f20ef49b884ba92f20dbb01c5e.jpg' },
+    { left: 'https://i.pinimg.com/1200x/1e/80/9c/1e809c32a45859e2c2e5d024a686a37c.jpg', right: 'https://i.pinimg.com/736x/24/36/dd/2436dd065934754c9d867d80cffb0f95.jpg' }
+  ];
+
+  const renderAboutUs = () => (
+    <AnimatePresence mode="wait">
+      {aboutStep < 5 ? (
+        // Story Pages (0-4)
+        <motion.div
+          key={`story-step-${aboutStep}`}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="w-full min-h-[100vh] pt-32 pb-20 px-6 relative overflow-hidden z-10"
+        >
+          {/* Falling Rain Effect */}
+          <div className="absolute inset-0 pointer-events-none z-0">
+            {[...Array(20)].map((_, i) => {
+              const colors = ['#fbbf24', '#f472b6', '#60a5fa', '#34d399', '#a78bfa', '#fb923c'];
+              const color = colors[i % colors.length];
+              return (
+                <motion.div
+                  key={`rain-item-${i}`}
+                  className="absolute"
+                  initial={{ 
+                    top: -20, 
+                    left: `${Math.random() * 100}%`, 
+                    opacity: 0,
+                    scale: Math.random() * 0.5 + 0.5
+                  }}
+                  animate={{
+                    top: '100%',
+                    opacity: [0, 1, 0],
+                  }}
+                  transition={{
+                    duration: Math.random() * 4 + 4,
+                    repeat: Infinity,
+                    delay: Math.random() * 2
+                  }}
+                  style={{ backgroundColor: color, width: 16, height: 16, borderRadius: '50%' }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Story Content with Images */}
+          <div className="relative z-10 w-full max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+              {/* Left Image */}
+              <motion.div 
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="hidden md:flex justify-center sticky top-32"
+              >
+                <img 
+                  src={storyImages[aboutStep]?.left}
+                  alt="left-image"
+                  className="rounded-[2rem] shadow-2xl object-cover w-full max-w-sm h-[500px]"
+                />
+              </motion.div>
+
+              {/* Center Content */}
+              <div className="text-center space-y-6">
+                <motion.h2 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`text-4xl md:text-5xl font-black pt-8 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+                >
+                  {t('about.story')[aboutStep]?.h}
+                </motion.h2>
+
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className={`text-lg md:text-xl leading-relaxed space-y-6 text-justify ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}
+                >
+                  {t('about.story')[aboutStep]?.p?.map((paragraph: string, idx: number) => (
+                    <motion.p 
+                      key={idx}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 + idx * 0.05 }}
+                      className="text-justify leading-8"
+                    >
+                      {paragraph}
+                    </motion.p>
+                  ))}
+                </motion.div>
+
+                {/* Question */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className={`p-6 rounded-[1.5rem] border ${isDarkMode ? 'bg-slate-900/50 border-white/10' : 'bg-white/20 border-white/40 backdrop-blur-lg'}`}
+                >
+                  <p className={`text-lg font-bold mb-4 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                    {t('about.story')[aboutStep]?.q}
+                  </p>
+                  {t('about.story')[aboutStep]?.opts ? (
+                    <div className="flex flex-col gap-2">
+                      {t('about.story')[aboutStep]?.opts.map((opt: string, idx: number) => (
+                        <button
+                          key={idx}
+                          onClick={() => setAboutStep(aboutStep + 1)}
+                          className={`py-2 px-4 rounded-lg font-semibold text-sm transition-all ${isDarkMode ? 'bg-white/10 hover:bg-blue-600 text-white' : 'bg-white hover:bg-blue-50 text-slate-900'}`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </motion.div>
+              </div>
+
+              {/* Right Image */}
+              <motion.div 
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="hidden md:flex justify-center sticky top-32"
+              >
+                <img 
+                  src={storyImages[aboutStep]?.right}
+                  alt="right-image"
+                  className="rounded-[2rem] shadow-2xl object-cover w-full max-w-sm h-[500px]"
+                />
+              </motion.div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="flex justify-center gap-4 flex-wrap mt-12"
+            >
+              {aboutStep > 0 && (
+                <button
+                  onClick={() => setAboutStep(aboutStep - 1)}
+                  className={`px-8 py-3 rounded-full font-bold transition-all ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'}`}
+                >
+                  ← Back
+                </button>
+              )}
+              <button
+                onClick={() => setAboutStep(aboutStep + 1)}
+                className="px-8 py-3 rounded-full font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all"
+              >
+                {t('about.story')[aboutStep]?.btn || 'Next'} →
+              </button>
+            </motion.div>
+
+            {/* Progress Indicator */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className={`mt-6 text-center text-sm font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+            >
+              {aboutStep + 1} / 6
+            </motion.div>
+          </div>
+        </motion.div>
+      ) : (
+        // Final Page (Step 5)
+        <motion.div
+          key="about-final"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="w-full min-h-[100vh] pt-32 pb-20 px-6 relative overflow-hidden z-10"
+        >
+          {/* Falling Rain Effect */}
+          <div className="absolute inset-0 pointer-events-none z-0">
+            {[...Array(20)].map((_, i) => {
+              const colors = ['#fbbf24', '#f472b6', '#60a5fa', '#34d399', '#a78bfa', '#fb923c'];
+              const color = colors[i % colors.length];
+              return (
+                <motion.div
+                  key={`rain-item-final-${i}`}
+                  className="absolute"
+                  initial={{ 
+                    top: -20, 
+                    left: `${Math.random() * 100}%`, 
+                    opacity: 0,
+                    scale: Math.random() * 0.5 + 0.5
+                  }}
+                  animate={{
+                    top: '100%',
+                    opacity: [0, 1, 0],
+                  }}
+                  transition={{
+                    duration: Math.random() * 4 + 4,
+                    repeat: Infinity,
+                    delay: Math.random() * 2
+                  }}
+                  style={{ backgroundColor: color, width: 16, height: 16, borderRadius: '50%' }}
+                />
+              );
+            })}
+          </div>
+
+          <div className="relative z-10 w-full max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+              {/* Left Image */}
+              <motion.div 
+                initial={{ opacity: 0, x: -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="hidden md:flex justify-center sticky top-32"
+              >
+                <img 
+                  src="https://i.pinimg.com/1200x/43/36/26/433626e8210d6d2666c715889f47d245.jpg"
+                  alt="left-image"
+                  className="rounded-[2rem] shadow-2xl object-cover w-full max-w-sm h-[500px]"
+                />
+              </motion.div>
+
+              {/* Center Content */}
+              <div className="text-center space-y-6">
+                <motion.h2 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`text-4xl md:text-5xl font-extrabold pt-8 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
+                >
+                  {t('about.final.title')}
+                </motion.h2>
+
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className={`text-lg leading-8 text-justify ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}
+                >
+                  {t('about.final.desc')}
+                </motion.p>
+
+                <div className="space-y-6">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className={`p-6 rounded-[1.5rem] border ${isDarkMode ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-white/10' : 'bg-gradient-to-br from-white to-blue-50 border-slate-100'}`}
+                  >
+                    <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {t('about.final.missionTitle')}
+                    </h3>
+                    <p className={`text-justify leading-7 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {t('about.final.missionDesc')}
+                    </p>
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className={`p-6 rounded-[1.5rem] border ${isDarkMode ? 'bg-gradient-to-br from-slate-800 to-slate-900 border-white/10' : 'bg-gradient-to-br from-white to-blue-50 border-slate-100'}`}
+                  >
+                    <h3 className={`text-xl font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                      {t('about.final.contactTitle')}
+                    </h3>
+                    <p className={`text-justify leading-7 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      {t('about.final.contactDesc')}
+                    </p>
+                  </motion.div>
+                </div>
+              </div>
+
+              {/* Right Image */}
+              <motion.div 
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="hidden md:flex justify-center sticky top-32"
+              >
+                <img 
+                  src="https://i.pinimg.com/1200x/fa/d1/82/fad182af184e7c5eacff74e06faa8102.jpg"
+                  alt="right-image"
+                  className="rounded-[2rem] shadow-2xl object-cover w-full max-w-sm h-[500px]"
+                />
+              </motion.div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="flex justify-center gap-4 flex-wrap mt-12"
+            >
+              <button
+                onClick={() => setAboutStep(4)}
+                className={`px-8 py-3 rounded-full font-bold transition-all ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-slate-200 hover:bg-slate-300 text-slate-900'}`}
+              >
+                ← Back
+              </button>
+              <a
+                href="https://github.com/24521450/-mindscan-ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-3 rounded-full font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all"
+              >
+                {t('about.viewGithub')}
+              </a>
+              <button
+                onClick={() => {
+                  setIsAboutUsOpen(false);
+                  setAboutStep(0);
+                }}
+                className={`px-8 py-3 rounded-full font-bold transition-all ${isDarkMode ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-200 text-slate-900 hover:bg-slate-50'} border-2`}
+              >
+                {t('about.btnBack')}
+              </button>
+            </motion.div>
+
+            {/* Progress Indicator */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className={`text-center mt-6 text-sm font-semibold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
+            >
+              6 / 6
+            </motion.div>
+          </div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
@@ -1235,116 +1594,196 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
 
   // ─── Dashboard Chart Data ───────────────────────────────────────────────
   const buildRadarData = () => {
-    // Normalize each dimension to 0–100
-    const study = Math.round(((Number(formData.academic_performance) + (5 - Number(formData.study_load))) / 10) * 100);
-    const sleep = Math.round((Number(formData.sleep_quality) / 5) * 100);
-    const social = Math.round(((Number(formData.social_support) / 3 + Number(formData.extracurricular_activities) / 5) / 2) * 100);
-    const finance = Math.round(((Number(formData.basic_needs) + Number(formData.living_conditions)) / 10) * 100);
-    const exercise = Math.round(((Number(formData.extracurricular_activities) / 5 * 0.6) + ((5 - Number(formData.headache)) / 5 * 0.4)) * 100);
-
-    const getRadarLabel = (cat: string) => {
-      const radMap: any = {
-        en: { study: "Study", sleep: "Sleep", social: "Social", finance: "Finance", exercise: "Exercise" },
-        vi: { study: "Học tập", sleep: "Giấc ngủ", social: "Xã hội", finance: "Tài chính", exercise: "Thể chất" },
-        fr: { study: "Études", sleep: "Sommeil", social: "Social", finance: "Finance", exercise: "Exercice" },
-        de: { study: "Studium", sleep: "Schlaf", social: "Soziales", finance: "Finanzen", exercise: "Sport" },
-        zh: { study: "学习", sleep: "睡眠", social: "社交", finance: "财务", exercise: "运动" }
+    // Normalize each dimension to 0–100 with safety checks
+    try {
+      const safeNum = (val: any, def = 0) => {
+        const n = Number(val) || def;
+        return isNaN(n) ? def : n;
       };
-      return radMap[language]?.[cat] || radMap.en[cat];
-    };
+      
+      const ap = safeNum(formData.academic_performance, 0);
+      const sl = safeNum(formData.study_load, 0);
+      const sq = safeNum(formData.sleep_quality, 0);
+      const ss = safeNum(formData.social_support, 0);
+      const ea = safeNum(formData.extracurricular_activities, 0);
+      const bn = safeNum(formData.basic_needs, 0);
+      const lc = safeNum(formData.living_conditions, 0);
+      const hc = safeNum(formData.headache, 0);
+      
+      const study = Math.round(((ap + (5 - sl)) / 10) * 100);
+      const sleep = Math.round((sq / 5) * 100);
+      const social = Math.round(((ss / 3 + ea / 5) / 2) * 100);
+      const finance = Math.round(((bn + lc) / 10) * 100);
+      const exercise = Math.round(((ea / 5 * 0.6) + ((5 - hc) / 5 * 0.4)) * 100);
 
-    return [
-      { subject: getRadarLabel('study'), value: Math.min(100, Math.max(5, study)), fullMark: 100 },
-      { subject: getRadarLabel('sleep'), value: Math.min(100, Math.max(5, sleep)), fullMark: 100 },
-      { subject: getRadarLabel('social'), value: Math.min(100, Math.max(5, social)), fullMark: 100 },
-      { subject: getRadarLabel('finance'), value: Math.min(100, Math.max(5, finance)), fullMark: 100 },
-      { subject: getRadarLabel('exercise'), value: Math.min(100, Math.max(5, exercise)), fullMark: 100 },
-    ];
+      const getRadarLabel = (cat: string) => {
+        const radMap: any = {
+          en: { study: "Study", sleep: "Sleep", social: "Social", finance: "Finance", exercise: "Exercise" },
+          vi: { study: "Học tập", sleep: "Giấc ngủ", social: "Xã hội", finance: "Tài chính", exercise: "Thể chất" },
+          fr: { study: "Études", sleep: "Sommeil", social: "Social", finance: "Finance", exercise: "Exercice" },
+          de: { study: "Studium", sleep: "Schlaf", social: "Soziales", finance: "Finanzen", exercise: "Sport" },
+          zh: { study: "学习", sleep: "睡眠", social: "社交", finance: "财务", exercise: "运动" }
+        };
+        return radMap[language]?.[cat] || radMap.en[cat];
+      };
+
+      return [
+        { subject: getRadarLabel('study'), value: Math.min(100, Math.max(5, isNaN(study) ? 50 : study)), fullMark: 100 },
+        { subject: getRadarLabel('sleep'), value: Math.min(100, Math.max(5, isNaN(sleep) ? 50 : sleep)), fullMark: 100 },
+        { subject: getRadarLabel('social'), value: Math.min(100, Math.max(5, isNaN(social) ? 50 : social)), fullMark: 100 },
+        { subject: getRadarLabel('finance'), value: Math.min(100, Math.max(5, isNaN(finance) ? 50 : finance)), fullMark: 100 },
+        { subject: getRadarLabel('exercise'), value: Math.min(100, Math.max(5, isNaN(exercise) ? 50 : exercise)), fullMark: 100 },
+      ];
+    } catch (error) {
+      console.error('Error in buildRadarData:', error);
+      return [
+        { subject: 'Study', value: 50, fullMark: 100 },
+        { subject: 'Sleep', value: 50, fullMark: 100 },
+        { subject: 'Social', value: 50, fullMark: 100 },
+        { subject: 'Finance', value: 50, fullMark: 100 },
+        { subject: 'Exercise', value: 50, fullMark: 100 },
+      ];
+    }
   };
 
   const buildStressTrendData = () => {
-    const weekly = [
-      { label: 'Mon', stress: 45, avg: 52 },
-      { label: 'Tue', stress: 62, avg: 55 },
-      { label: 'Wed', stress: 38, avg: 50 },
-      { label: 'Thu', stress: 71, avg: 58 },
-      { label: 'Fri', stress: 55, avg: 53 },
-      { label: 'Sat', stress: 30, avg: 42 },
-      { label: 'Sun', stress: 25, avg: 38 },
-    ];
-    const monthly = [
-      { label: 'W1', stress: 48, avg: 50 },
-      { label: 'W2', stress: 65, avg: 54 },
-      { label: 'W3', stress: 42, avg: 51 },
-      { label: 'W4', stress: 58, avg: 55 },
-    ];
-    // Blend with actual session data if available
-    if (sessionHistory.length > 0) {
-      const lastScore = sessionHistory[sessionHistory.length - 1]?.stressScore ?? 50;
-      if (stressTrendPeriod === 'weekly') {
-        weekly[weekly.length - 1].stress = lastScore;
-      } else {
-        monthly[monthly.length - 1].stress = lastScore;
+    try {
+      const weekly = [
+        { label: 'Mon', stress: 45, avg: 52 },
+        { label: 'Tue', stress: 62, avg: 55 },
+        { label: 'Wed', stress: 38, avg: 50 },
+        { label: 'Thu', stress: 71, avg: 58 },
+        { label: 'Fri', stress: 55, avg: 53 },
+        { label: 'Sat', stress: 30, avg: 42 },
+        { label: 'Sun', stress: 25, avg: 38 },
+      ];
+      const monthly = [
+        { label: 'W1', stress: 48, avg: 50 },
+        { label: 'W2', stress: 65, avg: 54 },
+        { label: 'W3', stress: 42, avg: 51 },
+        { label: 'W4', stress: 58, avg: 55 },
+      ];
+      // Blend with actual session data if available
+      if (sessionHistory && sessionHistory.length > 0) {
+        const lastScore = Number(sessionHistory[sessionHistory.length - 1]?.stressScore ?? 50);
+        if (!isNaN(lastScore) && lastScore >= 0 && lastScore <= 100) {
+          if (stressTrendPeriod === 'weekly') {
+            weekly[weekly.length - 1].stress = lastScore;
+          } else {
+            monthly[monthly.length - 1].stress = lastScore;
+          }
+        }
       }
+      return stressTrendPeriod === 'weekly' ? weekly : monthly;
+    } catch (error) {
+      console.error('Error in buildStressTrendData:', error);
+      return [
+        { label: 'Mon', stress: 50, avg: 50 },
+        { label: 'Tue', stress: 50, avg: 50 },
+        { label: 'Wed', stress: 50, avg: 50 },
+        { label: 'Thu', stress: 50, avg: 50 },
+        { label: 'Fri', stress: 50, avg: 50 },
+        { label: 'Sat', stress: 50, avg: 50 },
+        { label: 'Sun', stress: 50, avg: 50 },
+      ];
     }
-    return stressTrendPeriod === 'weekly' ? weekly : monthly;
   };
 
   const buildCalendarData = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sun
-    // Stress levels: 0=none, 1=low, 2=medium, 3=high
-    const stressPattern = [1, 1, 2, 3, 2, 1, 1, 2, 3, 3, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 2, 2, 1, 1, 1, 2, 3, 3, 2, 1];
-    const currentStress = aiResult?.stress_level === 'High' ? 3 : aiResult?.stress_level === 'Medium' ? 2 : 1;
-    stressPattern[now.getDate() - 1] = currentStress;
-    return { daysInMonth, firstDayOfWeek: firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1, stressPattern, month, year };
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sun
+      // Stress levels: 0=none, 1=low, 2=medium, 3=high
+      const stressPattern = [1, 1, 2, 3, 2, 1, 1, 2, 3, 3, 2, 1, 1, 2, 3, 3, 2, 2, 1, 1, 2, 2, 2, 1, 1, 1, 2, 3, 3, 2, 1];
+      const currentStress = aiResult?.stress_level === 'High' ? 3 : aiResult?.stress_level === 'Medium' ? 2 : 1;
+      const dateNum = now.getDate();
+      if (dateNum >= 1 && dateNum <= stressPattern.length) {
+        stressPattern[dateNum - 1] = currentStress;
+      }
+      return { daysInMonth, firstDayOfWeek: firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1, stressPattern, month, year };
+    } catch (error) {
+      console.error('Error in buildCalendarData:', error);
+      const now = new Date();
+      return { 
+        daysInMonth: 30, 
+        firstDayOfWeek: 0, 
+        stressPattern: Array(31).fill(1), 
+        month: now.getMonth(), 
+        year: now.getFullYear() 
+      };
+    }
   };
 
-  const buildPeerData = () => [
-    {
-      label: getFeatureLabel('sleep_quality'),
-      you: Math.round((Number(formData.sleep_quality) / 5) * 10),
-      avg: 7,
-      unit: 'hrs',
-      youPct: Math.round((Number(formData.sleep_quality) / 5) * 100),
-      avgPct: 70,
-    },
-    {
-      label: getFeatureLabel('study_load'),
-      you: Number(formData.study_load),
-      avg: 3,
-      unit: '/5',
-      youPct: Math.round((Number(formData.study_load) / 5) * 100),
-      avgPct: 60,
-    },
-    {
-      label: getFeatureLabel('social_support'),
-      you: Number(formData.social_support),
-      avg: 2,
-      unit: '/3',
-      youPct: Math.round((Number(formData.social_support) / 3) * 100),
-      avgPct: 65,
-    },
-    {
-      label: getFeatureLabel('extracurricular_activities'),
-      you: Number(formData.extracurricular_activities),
-      avg: 3,
-      unit: '/5',
-      youPct: Math.round((Number(formData.extracurricular_activities) / 5) * 100),
-      avgPct: 60,
-    },
-    {
-      label: getFeatureLabel('basic_needs'),
-      you: Number(formData.basic_needs),
-      avg: 4,
-      unit: '/5',
-      youPct: Math.round((Number(formData.basic_needs) / 5) * 100),
-      avgPct: 80,
-    },
-  ];
+  const buildPeerData = () => {
+    try {
+      const safeNum = (val: any, def = 0) => {
+        const n = Number(val) || def;
+        return isNaN(n) ? def : n;
+      };
+      
+      const sq = safeNum(formData.sleep_quality, 0);
+      const sl = safeNum(formData.study_load, 0);
+      const ss = safeNum(formData.social_support, 0);
+      const ea = safeNum(formData.extracurricular_activities, 0);
+      const bn = safeNum(formData.basic_needs, 0);
+      
+      const peerData = [
+        {
+          label: getFeatureLabel('sleep_quality'),
+          you: Math.round((sq / 5) * 10),
+          avg: 7,
+          unit: 'hrs',
+          youPct: Math.min(100, Math.round((sq / 5) * 100)),
+          avgPct: 70,
+        },
+        {
+          label: getFeatureLabel('study_load'),
+          you: sl,
+          avg: 3,
+          unit: '/5',
+          youPct: Math.min(100, Math.round((sl / 5) * 100)),
+          avgPct: 60,
+        },
+        {
+          label: getFeatureLabel('social_support'),
+          you: ss,
+          avg: 2,
+          unit: '/3',
+          youPct: Math.min(100, Math.round((ss / 3) * 100)),
+          avgPct: 65,
+        },
+        {
+          label: getFeatureLabel('extracurricular_activities'),
+          you: ea,
+          avg: 3,
+          unit: '/5',
+          youPct: Math.min(100, Math.round((ea / 5) * 100)),
+          avgPct: 60,
+        },
+        {
+          label: getFeatureLabel('basic_needs'),
+          you: bn,
+          avg: 4,
+          unit: '/5',
+          youPct: Math.min(100, Math.round((bn / 5) * 100)),
+          avgPct: 80,
+        },
+      ];
+      return peerData;
+    } catch (error) {
+      console.error('Error in buildPeerData:', error);
+      return [
+        { label: 'Sleep', you: 0, avg: 7, unit: 'hrs', youPct: 0, avgPct: 70 },
+        { label: 'Study', you: 0, avg: 3, unit: '/5', youPct: 0, avgPct: 60 },
+        { label: 'Social', you: 0, avg: 2, unit: '/3', youPct: 0, avgPct: 65 },
+        { label: 'Activities', you: 0, avg: 3, unit: '/5', youPct: 0, avgPct: 60 },
+        { label: 'Needs', you: 0, avg: 4, unit: '/5', youPct: 0, avgPct: 80 },
+      ];
+    }
+  };
 
   // Custom Radar tooltip
   const RadarTooltip = ({ active, payload }: any) => {
@@ -1408,16 +1847,16 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
               {t('ui.dashboard.subtitle')}
             </p>
           </div>
-          <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide shrink-0 ${isDarkMode ? 'bg-teal-500/15 text-teal-300' : 'bg-teal-600/10 text-teal-700'
+          <div className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest shrink-0 ${isDarkMode ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30' : 'bg-teal-600/10 text-teal-700 border border-teal-200'
             }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
             <Activity className="w-4 h-4" /> {t('ui.dashboard.period')}
           </div>
         </div>
 
         {/* Row 1: Radar Chart + Summary Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ minHeight: '400px' }}>
           {/* Radar Chart */}
-          <div className={`lg:col-span-7 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
+          <div className={`lg:col-span-7 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`} style={{ minHeight: '400px' }}>
             <div className="flex items-start justify-between mb-2">
               <div>
                 <h3 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
@@ -1428,8 +1867,8 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
               <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isDarkMode ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' : 'bg-teal-100 text-teal-700 border border-teal-200'
                 }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.live')}</span>
             </div>
-            <div className="w-full" style={{ height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="w-full" style={{ height: 320, minWidth: 0, overflow: 'hidden' }}>
+              <ResponsiveContainer width="100%" height="100%" debounce={10}>
                 <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
                   <defs>
                     <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
@@ -1485,7 +1924,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
           </div>
 
           {/* Stats Column */}
-          <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="lg:col-span-5 flex flex-col gap-4" style={{ minHeight: '400px' }}>
             {radarData.map((d, i) => {
               const icons = [BookOpen, Moon, Users, DollarSign, Activity];
               const Icon = icons[i];
@@ -1521,9 +1960,9 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
         </div>
 
         {/* Row 2: Area Chart + Calendar Heatmap */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" style={{ minHeight: '350px' }}>
           {/* Stress Trend Area Chart */}
-          <div className={`lg:col-span-8 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
+          <div className={`lg:col-span-8 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`} style={{ minHeight: '350px' }}>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
@@ -1546,8 +1985,8 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                     }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.monthly')}</button>
               </div>
             </div>
-            <div style={{ height: 240 }}>
-              <ResponsiveContainer width="100%" height="100%">
+            <div style={{ height: 240, minWidth: 0, overflow: 'hidden' }}>
+              <ResponsiveContainer width="100%" height="100%" debounce={10}>
                 <AreaChart data={trendData} margin={{ top: 5, right: 10, bottom: 0, left: -20 }}>
                   <defs>
                     <linearGradient id="stressGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1615,7 +2054,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
           </div>
 
           {/* Calendar Heatmap */}
-          <div className={`lg:col-span-4 analytics-glass-card rounded-[2rem] p-6 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
+          <div className={`lg:col-span-4 analytics-glass-card rounded-[2rem] p-6 shadow-sm ${isDarkMode ? 'dark' : ''}`} style={{ minHeight: '350px' }}>
             <h3 className={`text-xl font-bold mb-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
               style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.dashboard.moodCalendar')}</h3>
             <p className={`text-xs mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
@@ -1674,7 +2113,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
         </div>
 
         {/* Row 3: Peer Comparison Horizontal Bar Chart */}
-        <div className={`analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
+        <div className={`analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`} style={{ minHeight: '300px' }}>
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
               <h3 className={`text-xl font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
@@ -1899,8 +2338,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
         {isDarkMode ? (
           <>
             <div className="absolute top-[-15%] left-[-10%] w-[55vw] h-[55vw] rounded-full filter blur-[120px] opacity-30 animate-blob bg-indigo-700" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full filter blur-[120px] opacity-20 animate-blob animation-delay-2000 bg-violet-900" />
-            <div className="absolute top-[40%] left-[40%] w-[40vw] h-[40vw] rounded-full filter blur-[100px] opacity-15 animate-blob animation-delay-4000 bg-blue-900" />
+<div className="absolute top-[40%] left-[40%] w-[40vw] h-[40vw] rounded-full filter blur-[100px] opacity-15 animate-blob animation-delay-4000 bg-blue-900" />            <div className="absolute top-[40%] left-[40%] w-[40vw] h-[40vw] rounded-full filter blur-[100px] opacity-15 animate-blob animation-delay-4000 bg-blue-900" />
           </>
         ) : (
           <>
@@ -1923,11 +2361,12 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             : 'bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.04)] rounded-full px-5 py-2'
             }`}>
             <div className="flex items-center gap-8 min-w-0">
-              <div className={`text-xl font-bold tracking-tight cursor-pointer transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`} onClick={() => { setIsSurveyOpen(false); setIsCompleted(false); setCurrentStep(1); }}>{t('appName')}</div>
-              {!isSurveyOpen && (
+              <div className={`text-xl font-bold tracking-tight cursor-pointer transition-colors duration-500 ${isDarkMode ? 'text-white' : 'text-[#0b132b]'}`} onClick={() => { setIsSurveyOpen(false); setIsCompleted(false); setIsAboutUsOpen(false); setCurrentStep(1); }}>{t('appName')}</div>
+              {!isSurveyOpen && !isAboutUsOpen && (
                 <nav className={`hidden md:flex items-center gap-6 text-sm font-semibold ${isDarkMode ? 'text-gray-300' : 'text-slate-800'}`}>
                   <a href="#solutions" className={`transition-colors ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-slate-900 hover:text-blue-700'}`}>{t('nav.solutions')}</a>
                   <button onClick={() => setShowTechnologyModal(true)} className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-blue-700'}`}>{t('nav.technology')}</button>
+                  <button onClick={() => setIsAboutUsOpen(true)} className={`transition-colors ${isDarkMode ? 'hover:text-white' : 'hover:text-blue-700'}`}>{t('nav.about')}</button>
                 </nav>
               )}
             </div>
@@ -1935,6 +2374,25 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
 
 
             <div className="flex items-center gap-3">
+
+              {/* Print button — chỉ hiện ở trang kết quả */}
+              {isCompleted && aiResult && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={() => alert('🚧 Tính năng đang phát triển')}
+                  className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all ${
+                    isDarkMode
+                      ? 'bg-white/10 border-white/20 text-slate-200 hover:bg-white/20'
+                      : 'bg-white/60 border-white/60 text-slate-700 hover:bg-white/90'
+                  }`}
+                  title="In báo cáo"
+                >
+                  <Printer className="w-4 h-4" />
+                  In
+                </motion.button>
+              )}
+
               {/* Premium Dark / Light Mode Toggle */}
               <motion.div
                 className="relative hidden sm:flex w-[130px] h-[43px] rounded-full border-2 border-white/60 cursor-pointer overflow-hidden items-center shrink-0 shadow-[0_10px_20px_rgba(0,0,0,0.2),inset_2px_4px_4px_2px_rgba(2,1,68,0.5),inset_-2px_-2px_2px_rgba(1,0,89,0.5)]"
@@ -2031,24 +2489,12 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
 {!isSurveyOpen && (
                 <>
                   {!isLoggedIn ? (
-                    <>
-                      <button
-                        onClick={handleShowLoginConfirm}
-                        className={`hidden md:block text-sm font-medium transition-colors ${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
-                      >
-                        {t('nav.signIn')}
-                      </button>
-                      <button
-                        onClick={() => setIsSurveyOpen(true)}
-                        className={`relative overflow-hidden rounded-full font-semibold px-5 py-2 text-sm transition-all duration-300 flex items-center gap-2 group ${isDarkMode
-                          ? 'bg-blue-600 text-white border border-blue-500 hover:bg-blue-500'
-                          : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg hover:-translate-y-0.5'
-                          }`}
-                      >
-                        <div className="absolute inset-0 -translate-x-full group-hover:animate-shimmer bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-                        {t('nav.getStarted')}
-                      </button>
-                    </>
+                    <button
+                      onClick={handleShowLoginConfirm}
+                      className={`hidden md:block text-sm font-medium transition-colors ${isDarkMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      {t('nav.signIn')}
+                    </button>
                   ) : (
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${isDarkMode ? 'bg-blue-600' : 'bg-blue-600'}`}>
@@ -2319,9 +2765,12 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
       {renderHowItWorksModal()}
       {renderEmergencyModal()}
       {renderLoginConfirmModal()}
+      {renderActionDetailModal()}
 
       <AnimatePresence mode="wait">
-        {!isSurveyOpen ? (
+        {isAboutUsOpen ? (
+          renderAboutUs()
+        ) : !isSurveyOpen ? (
           <motion.div
             key="landing"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -20 }}
@@ -2649,7 +3098,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             </section>
 
             {/* Wellness Tools Section */}
-            <ArticleSection language={language} />
+            <ArticleSection language={language} isDarkMode={isDarkMode} />
 
             {/* Footer */}
             <footer className={`border-t pt-12 pb-8 relative z-10 transition-colors duration-500 ${isDarkMode
@@ -2707,7 +3156,8 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             className={`container mx-auto px-6 min-h-[100dvh] flex flex-col w-full ${isCompleted ? 'items-stretch justify-start pt-24 pb-12 max-w-[1360px]' : 'items-center justify-center py-24 max-w-3xl'}`}
           >
             {!isCompleted ? (
-              <div className={`relative rounded-[2rem] overflow-hidden p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
+              <div className={`relative rounded-[2rem] overflow-visible p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05),inset_0_1px_2px_rgba(255,255,255,0.8)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}>
+                
                 {/* Progress Bar */}
                 <div className="mb-12">
                   <div className={`flex justify-between text-sm font-bold mb-4 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -2761,24 +3211,28 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             ) : (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                className={`relative rounded-[2rem] overflow-hidden p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}
+                className={`relative rounded-[2rem] overflow-visible p-8 md:p-12 border shadow-[0_8px_32px_0_rgba(0,0,0,0.05)] ${isDarkMode ? 'bg-slate-900/80 border-white/10' : 'bg-white/20 backdrop-blur-3xl border-white/40'}`}
+                style={{ overflow: 'clip' }}
+
               >
                 {isAnalyzing ? (
-                  <div className="text-center py-12">
-                    <div className="relative w-24 h-24 mx-auto mb-8">
-                      <div className={`absolute inset-0 border-4 rounded-full ${isDarkMode ? 'border-slate-700' : 'border-blue-100'}`}></div>
-                      <div className={`absolute inset-0 border-4 rounded-full border-t-transparent animate-spin ${isDarkMode ? 'border-blue-400' : 'border-blue-500'}`}></div>
-                      <div className={`absolute inset-0 m-auto w-8 h-8 rounded-full ${isDarkMode ? 'bg-blue-500/30' : 'bg-blue-500/20'}`}></div>
+                  <div className="text-center py-12 flex flex-col items-center">
+                    <div className="w-48 h-48 mx-auto mb-8 relative overflow-hidden rounded-3xl shadow-2xl border-4 border-white/20 bg-white">
+                      <img 
+                        src="https://i.pinimg.com/originals/2c/5f/bd/2c5fbdcabe1a6cc198bc86baee10b59b.gif" 
+                        alt="Analyzing..." 
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <h2 className={`text-2xl font-extrabold mb-2 tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('survey.analyzingTitle')}</h2>
                     <p className={isDarkMode ? 'text-slate-400' : 'text-slate-500'}>{t('survey.analyzingDesc')}</p>
                   </div>
                 ) : aiResult ? (
-                  <div className="relative w-full">
-                    {/* TOP LEFT - Back to Dashboard */}
+                  <>
+                    {/* NAVIGATION BUTTONS */}
                     <motion.button
                       onClick={() => setActiveDataModule('dashboard')}
-                      className={`hidden lg:flex absolute -left-7 top-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
+                      className={`hidden lg:flex absolute -left-0.5 top-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
                         activeDataModule === 'dashboard'
                           ? (isDarkMode ? 'bg-white/30 text-white border border-white/60' : 'bg-white/30 text-slate-900 border border-white/60')
                           : (isDarkMode ? 'bg-white/15 text-slate-300 hover:bg-white/25 border border-white/30' : 'bg-white/15 text-slate-600 hover:bg-white/25 border border-white/30')
@@ -2794,7 +3248,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                     {/* TOP RIGHT - Go to Analytics */}
                     <motion.button
                       onClick={() => setActiveDataModule('analytics')}
-                      className={`hidden lg:flex absolute -right-7 top-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
+                      className={`hidden lg:flex absolute -right-0.5 top-8 z-50 w-14 h-14 rounded-full items-center justify-center font-bold text-2xl shadow-lg leading-none pointer-events-auto ${
                         activeDataModule === 'analytics'
                           ? (isDarkMode ? 'bg-white/30 text-white border border-white/60' : 'bg-white/30 text-slate-900 border border-white/60')
                           : (isDarkMode ? 'bg-white/15 text-slate-300 hover:bg-white/25 border border-white/30' : 'bg-white/15 text-slate-600 hover:bg-white/25 border border-white/30')
@@ -2842,20 +3296,17 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                     {/* Dashboard View */}
                     <motion.div
                       initial={{ opacity: 0 }}
-                      animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                      style={{
-                        pointerEvents: activeDataModule === 'dashboard' ? 'auto' : 'none',
-                        display: activeDataModule === 'dashboard' ? 'block' : 'none'
-                      }}
+animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}                     style={{
+  pointerEvents: activeDataModule === 'dashboard' ? 'auto' : 'none',
+  display: activeDataModule === 'dashboard' ? 'block' : 'none'
+}}
                       className="w-full"
                     >
                     <div className="text-left w-full max-w-[1320px] mx-auto" style={{
-                      background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
-                    }}>
+  background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
+}}>
                       {/* Medical Report Style */}
-                      <div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>
-                          {/* Binding holes on the left */}
+<div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>                          {/* Binding holes on the left */}
                           <div className="absolute left-8 top-0 bottom-0 w-1 flex flex-col items-center justify-around pointer-events-none">
                             {[...Array(8)].map((_, i) => (
                               <motion.div
@@ -2888,7 +3339,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                 </p>
                               </div>
                               <motion.div
-                                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide ${isDarkMode ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30' : 'bg-teal-600/10 text-teal-700 border border-teal-200'}`}
+                                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30' : 'bg-teal-600/10 text-teal-700 border border-teal-200'}`}
                                 style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
                                 initial={{ scale: 0.8, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
@@ -2900,9 +3351,9 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                           </div>
 
                           {/* Content Area */}
-                          <div className="pl-8">
-                            <section className={`rounded-[2rem] p-6 md:p-8 xl:p-10 ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
-                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                         <div className="pl-8">
+  <section className={`rounded-[2rem] p-6 md:p-8 xl:p-10 ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
                                 <div className="lg:col-span-12 flex flex-col gap-8">
                                   {renderDashboardView()}
                                 </div>
@@ -2912,8 +3363,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                         </div>
                       </div>
                     </motion.div>
-
-                    {/* Analytics View */}
+             {/* Analytics View */}
                     <motion.div
                       initial={{ opacity: 0 }}
                       animate={activeDataModule === 'analytics' ? { opacity: 1 } : { opacity: 0 }}
@@ -2928,7 +3378,6 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                       background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
                     }}>
                       <div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>
-                          {/* Binding holes on the left */}
                           <div className="absolute left-8 top-0 bottom-0 w-1 flex flex-col items-center justify-around pointer-events-none">
                             {[...Array(8)].map((_, i) => (
                               <motion.div
@@ -2946,8 +3395,6 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                               />
                             ))}
                           </div>
-
-                          {/* Medical Report Header */}
                           <div className={`mb-8 pb-6 border-b-2 pl-8 ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
                             <div className="flex items-start justify-between gap-4 mb-4">
                               <div>
@@ -2971,12 +3418,9 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                               </motion.div>
                             </div>
                           </div>
-
-                          {/* Content Area */}
                           <div className="pl-8">
                             <section className={`rounded-[2rem] p-6 md:p-8 xl:p-10 ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
                               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 flex-1">
-                                {/* Stress Load Card */}
                                 <div className={`lg:col-span-5 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
                                   <div className="flex items-start justify-between gap-3 mb-4">
                                     <div>
@@ -2985,40 +3429,29 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                       <p className={`text-sm mt-0.5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
                                         style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.resultsPanel.stressLoadDesc')}</p>
                                     </div>
-                                    <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
-                                      }`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.live')}</span>
+                                    <span className={`text-[10px] font-bold px-3 py-1 rounded-full ${isDarkMode ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.live')}</span>
                                   </div>
                                   <div className="flex flex-col items-center justify-center py-2">
                                     <GaugeChart level={aiResult.stress_level} confidence={aiResult.confidence_score} t={t} isDarkMode={isDarkMode} />
                                   </div>
                                   <div className="mt-4 pt-4 grid grid-cols-3 gap-2" style={{ borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}` }}>
                                     <div className="text-center">
-                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.status.title')}</div>
-                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{insightMeta?.levelLabel || t('results.medium')}</div>
+                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.status.title')}</div>
+                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{insightMeta?.levelLabel || t('results.medium')}</div>
                                     </div>
                                     <div className="text-center">
-                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.trend')}</div>
-                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.stable')}</div>
+                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.trend')}</div>
+                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.stable')}</div>
                                     </div>
                                     <div className="text-center">
-                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.baseline')}</div>
-                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.max(0, Math.round((insightMeta?.confidencePct ?? 0) * 0.8))}%</div>
+                                      <div className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.baseline')}</div>
+                                      <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.max(0, Math.round((insightMeta?.confidencePct ?? 0) * 0.8))}%</div>
                                     </div>
                                   </div>
                                 </div>
-
-                                {/* Impact Factors Card */}
                                 <div className={`lg:col-span-7 analytics-glass-card rounded-[2rem] p-6 md:p-8 shadow-sm ${isDarkMode ? 'dark' : ''}`}>
-                                  <h3 className={`text-xl font-bold mb-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`}
-                                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.impactFactors')}</h3>
-                                  <p className={`text-sm mb-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                    style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.impactFactorsDesc')}</p>
+                                  <h3 className={`text-xl font-bold mb-1 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'}`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.impactFactors')}</h3>
+                                  <p className={`text-sm mb-5 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.impactFactorsDesc')}</p>
                                   <div className="w-full h-12 rounded-full overflow-hidden flex" style={{ background: isDarkMode ? '#1e293b' : '#eaeef1' }}>
                                     {aiResult.feature_importance.map((item: any, idx: number) => {
                                       const total = aiResult.feature_importance.reduce((s: number, f: any) => s + f.importance, 0);
@@ -3042,18 +3475,15 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                         <div key={`fi-${idx}`} className={`flex items-start gap-3 p-3 rounded-2xl ${isDarkMode ? 'bg-white/5' : 'bg-white/40'}`}>
                                           <span className="w-3 h-3 rounded-full mt-0.5 shrink-0" style={{ backgroundColor: dotColor }} />
                                           <div>
-                                            <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{getFeatureLabel(item.feature)}</div>
-                                            <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.round(item.importance)}% {t('ui.impact')}</div>
+                                            <div className={`text-sm font-bold ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{getFeatureLabel(item.feature)}</div>
+                                            <div className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{Math.round(item.importance)}% {t('ui.impact')}</div>
                                           </div>
                                         </div>
                                       );
                                     })}
                                   </div>
                                   <div className="mt-8 border-t border-slate-200/50 dark:border-white/10 pt-6">
-                                    <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                      style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.criticalTouchpoints')}</h4>
+                                    <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.criticalTouchpoints')}</h4>
                                     <div className="flex flex-wrap gap-2">
                                       {(insightMeta?.topFeatures || []).map((item, idx) => (
                                         <span key={`touch-${idx}`}
@@ -3067,29 +3497,17 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                 </div>
                               </div>
                             </section>
-
-                              {/* Prominent Trends */}
                               <div className="max-w-2xl mx-auto w-full mt-4">
                                 <div className={`analytics-glass-card w-full rounded-[1.75rem] p-5 flex flex-col items-center text-center border border-white/40 ${isDarkMode ? 'dark' : ''}`}>
-                                  <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
-                                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.prominentTrends')}</h4>
+                                  <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.prominentTrends')}</h4>
                                   {(() => {
-                                    // buildInsightCopy() always formats as:
-                                    // "<intro>. Top trends: <f1>, <f2>, <f3>."
-                                    // We extract ONLY the feature tags (format: "Label (XX%)").
                                     const rawTrends = String(insightCopy?.trends || t('ui.prominentTrendsFallback'));
-                                    // Match all "Label (XX%)" tokens regardless of language
                                     const tagRegex = /([^,;\n(]+\([^)]+%\))/g;
                                     const tagMatches = rawTrends.match(tagRegex) || [];
-                                    const trendsList: string[] = tagMatches
-                                      .map(s => s.trim())
-                                      .filter(Boolean);
-
-                                    // Final fallback: split on commas/semicolons
+                                    const trendsList: string[] = tagMatches.map(s => s.trim()).filter(Boolean);
                                     const displayList = trendsList.length > 0
                                       ? trendsList
                                       : rawTrends.split(/[,;\n•]+/).map(s => s.replace(/\.$/, '').trim()).filter(Boolean);
-
                                     return (
                                       <div className="flex flex-wrap justify-center gap-2">
                                         {displayList.map((item, idx) => (
@@ -3104,18 +3522,14 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                   })()}
                                 </div>
                               </div>
-
                               {sessionHistory.length > 0 && (
                                 <section className="mt-8 space-y-5">
                                   <div className="flex items-end justify-between gap-4">
                                     <div>
-                                      <h3 className={`text-2xl font-extrabold tracking-tight ${isDarkMode ? 'text-gray-200' : 'text-slate-900'}`}
-                                        style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('results.historyTitle')}</h3>
-                                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                        style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.anonymousHistoryDesc')}</p>
+                                      <h3 className={`text-2xl font-extrabold tracking-tight ${isDarkMode ? 'text-gray-200' : 'text-slate-900'}`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('results.historyTitle')}</h3>
+                                      <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.anonymousHistoryDesc')}</p>
                                     </div>
-                                    <button className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline`}
-                                      style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" /></button>
+                                    <button className={`${isDarkMode ? 'text-teal-300' : 'text-teal-700'} text-sm font-semibold flex items-center gap-1 hover:underline`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.viewFullLog')} <ArrowRight className="w-3.5 h-3.5" /></button>
                                   </div>
                                   <div className={`p-5 rounded-[2rem] border ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/25 backdrop-blur-3xl border-white/40'}`}>
                                     <div className="space-y-3">
@@ -3124,8 +3538,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                         return (
                                           <div key={`history-${session.date}-${idx}`}
                                             className={`analytics-glass-card rounded-2xl p-4 flex items-center gap-6 border border-white/40 group hover:bg-white/60 transition-colors ${isDarkMode ? 'dark' : ''}`}>
-                                            <div className={`w-24 text-xs font-bold shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{formatSessionDate(session.date)}</div>
+                                            <div className={`w-24 text-xs font-bold shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{formatSessionDate(session.date)}</div>
                                             <div className="flex-1">
                                               {session.features && (
                                                 <div className="flex h-3 rounded-full overflow-hidden bg-slate-100">
@@ -3138,8 +3551,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                                 </div>
                                               )}
                                             </div>
-                                            <div className={`w-10 text-right text-xs font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}
-                                              style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{score}</div>
+                                            <div className={`w-10 text-right text-xs font-black ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{score}</div>
                                           </div>
                                         );
                                       })}
@@ -3147,13 +3559,10 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                   </div>
                                 </section>
                               )}
-
                               <section className="mt-10 mb-12 space-y-5">
                                 <div>
-                                  <h3 className={`text-2xl font-extrabold tracking-tight ${isDarkMode ? 'text-gray-200' : 'text-slate-900'}`}
-                                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.recommendedActions')}</h3>
-                                  <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}
-                                    style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.recommendedActionsDesc')}</p>
+                                  <h3 className={`text-2xl font-extrabold tracking-tight ${isDarkMode ? 'text-gray-200' : 'text-slate-900'}`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.recommendedActions')}</h3>
+                                  <p className={`text-sm mt-1 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{t('ui.recommendedActionsDesc')}</p>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
                                   {(showAllRecs ? actionCards : actionCards.slice(0, 4)).map((rec) => {
@@ -3166,7 +3575,6 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                     else if (key === 'exercise') { Icon = Activity; colorClass = isDarkMode ? 'bg-pink-500/20 text-pink-300' : 'bg-pink-100 text-pink-700'; }
                                     else if (key === 'finance') { Icon = DollarSign; colorClass = isDarkMode ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700'; }
                                     else if (key === 'mental') { Icon = HeartHandshake; colorClass = isDarkMode ? 'bg-teal-500/20 text-teal-300' : 'bg-teal-600/10 text-teal-700'; }
-
                                     return (
                                       <ActionCard
                                         key={rec.id}
@@ -3178,20 +3586,17 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                                         isBookmarked={bookmarkedRecs.includes(rec.id)}
                                         detailsLabel={t('ui.details')}
                                         bookmarkAriaLabel={t('results.saveRec')}
-                                        onBookmark={(e) => {
-                                          e.stopPropagation();
-                                          toggleBookmark(rec.id);
-                                        }}
+                                        onBookmark={(e) => { e.stopPropagation(); toggleBookmark(rec.id); }}
+                                        onDetailClick={() => setSelectedActionDetail(rec)}
+  isDarkMode={isDarkMode}
                                       />
                                     );
                                   })}
                                 </div>
                                 {actionCards.length > 4 && (
                                   <div className="text-center mt-6">
-                                    <button
-                                      onClick={() => setShowAllRecs(prev => !prev)}
-                                      className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} font-medium text-sm underline underline-offset-4`}
-                                    >
+                                    <button onClick={() => setShowAllRecs(prev => !prev)}
+                                      className={`${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} font-medium text-sm underline underline-offset-4`}>
                                       {showAllRecs ? t('ui.showLess') : tWith('ui.showMore', { count: actionCards.length - 4 })}
                                     </button>
                                   </div>
@@ -3201,7 +3606,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
                           </div>
                         </div>
                     </motion.div>
-                  </div>
+                  </>
                 ) : (
                   <div className="text-center py-12">
                     <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${isDarkMode ? 'bg-red-900/30 text-red-500' : 'bg-red-100 text-red-500'}`}>
@@ -3226,7 +3631,7 @@ const modernLoginUrl = window.location.origin + '/src/Modern-Login-master/index.
             )}
           </motion.div>
         )}
-      </AnimatePresence>
-    </div>
+    </AnimatePresence>
+  </div>
   );
 }
