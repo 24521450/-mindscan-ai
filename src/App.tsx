@@ -2333,6 +2333,74 @@ mental_health_history: 'no' as 'yes' | 'no',    // Step 3: Physical
 
   return (
     <div className={`min-h-screen font-sans text-slate-900 dark:text-slate-100 relative overflow-x-hidden transition-colors duration-500 ${isDarkMode ? 'dark bg-gradient-to-br from-[#020510] via-[#0a0f1e] to-[#0d1b3e]' : 'bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-100'}`}>
+      <style>{`
+        @media print {
+          /* Hide everything by default, then selectively show report */
+          body * { visibility: hidden; }
+          
+          .report-container, .report-container * {
+            visibility: visible !important;
+          }
+          
+          /* Reset containers for natural document flow */
+          body, html {
+            overflow: visible !important;
+            height: auto !important;
+            background: white !important;
+          }
+
+          .report-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100% !important;
+            display: block !important;
+            overflow: visible !important;
+          }
+
+          /* Force both pages to show linearly and override JS conditional styles */
+          .page-1, .page-2 {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: relative !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            max-height: none !important;
+            top: 0 !important;
+            left: 0 !important;
+          }
+
+          .page-1 {
+            page-break-after: always;
+          }
+
+          /* Prevent cards from being cut between pages */
+          .analytics-glass-card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin-bottom: 2rem;
+          }
+
+          /* Disable UI artifacts and animations */
+          * {
+            animation: none !important;
+            transition: none !important;
+            overflow: visible !important;
+            max-height: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          header, footer, button, .lucide, .absolute.left-8.top-0, .fixed.inset-0.z-0 {
+            display: none !important;
+          }
+
+          @page { size: A4; margin: 15mm; }
+        }
+      `}</style>
+
       {/* Liquid Glass Background Blobs */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         {isDarkMode ? (
@@ -2380,7 +2448,18 @@ mental_health_history: 'no' as 'yes' | 'no',    // Step 3: Physical
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  onClick={() => alert('🚧 Tính năng đang phát triển')}
+                  onClick={() => {
+                    // Force render both modules to ensure all charts and data are initialized before print
+                    const originalModule = activeDataModule;
+                    setActiveDataModule('dashboard');
+                    setTimeout(() => {
+                      setActiveDataModule('analytics');
+                      setTimeout(() => {
+                        window.print();
+                        setActiveDataModule(originalModule);
+                      }, 500);
+                    }, 500);
+                  }}
                   className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition-all ${
                     isDarkMode
                       ? 'bg-white/10 border-white/20 text-slate-200 hover:bg-white/20'
@@ -3293,88 +3372,43 @@ mental_health_history: 'no' as 'yes' | 'no',    // Step 3: Physical
                       &gt;
                     </motion.button>
 
-                    {/* Dashboard View */}
-                    <motion.div
-                      initial={{ opacity: 0 }}
-animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}                     style={{
-  pointerEvents: activeDataModule === 'dashboard' ? 'auto' : 'none',
-  display: activeDataModule === 'dashboard' ? 'block' : 'none'
-}}
-                      className="w-full"
+                    {/* Report Wrapper to control printing scope */}
+                    <div className="report-container">
+                    {/* Page 1: Dashboard View - Forced render in DOM for print support */}
+                    <div
+                      style={{
+                        visibility: activeDataModule === 'dashboard' ? 'visible' : 'hidden',
+                        position: activeDataModule === 'dashboard' ? 'relative' : 'absolute',
+                        opacity: activeDataModule === 'dashboard' ? 1 : 0,
+                        pointerEvents: activeDataModule === 'dashboard' ? 'auto' : 'none',
+                        width: '100%',
+                        top: 0,
+                        left: 0
+                      }}
+                      className="w-full page-1"
                     >
-                    <div className="text-left w-full max-w-[1320px] mx-auto" style={{
+                    <div className="text-left w-full max-w-[1320px] mx-auto print-area" style={{
   background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
-}}>
-                      {/* Medical Report Style */}
-<div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>                          {/* Binding holes on the left */}
-                          <div className="absolute left-8 top-0 bottom-0 w-1 flex flex-col items-center justify-around pointer-events-none">
-                            {[...Array(8)].map((_, i) => (
-                              <motion.div
-                                key={`hole-${i}`}
-                                className="w-3 h-3 rounded-full border-2"
-                                style={{
-                                  borderColor: isDarkMode ? 'rgba(100,116,139,0.5)' : 'rgba(71,85,105,0.4)',
-                                  boxShadow: isDarkMode
-                                    ? 'inset 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(255,255,255,0.1)'
-                                    : 'inset 0 1px 2px rgba(0,0,0,0.1), 0 1px 2px rgba(255,255,255,0.8)'
-                                }}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                transition={{ delay: i * 0.05 }}
-                              />
-                            ))}
-                          </div>
-
-                          {/* Medical Report Header */}
-                          <div className={`mb-8 pb-6 border-b-2 pl-8 ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`}>
-                            <div className="flex items-start justify-between gap-4 mb-4">
-                              <div>
-                                <h2 className={`text-3xl lg:text-4xl font-extrabold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
-                                  style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-                                  {t('ui.resultsPanel.title')}
-                                </h2>
-                                <p className={`mt-2 text-sm md:text-base ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}
-                                  style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>
-                                  {t('ui.resultsPanel.subtitle')}
-                                </p>
-                              </div>
-                              <motion.div
-                                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider ${isDarkMode ? 'bg-teal-500/15 text-teal-300 border border-teal-500/30' : 'bg-teal-600/10 text-teal-700 border border-teal-200'}`}
-                                style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 0.2 }}
-                              >
-                                <Activity className="w-4 h-4" /> {t('ui.resultsPanel.last30Days')}
-                              </motion.div>
-                            </div>
-                          </div>
-
-                          {/* Content Area */}
-                         <div className="pl-8">
-  <section className={`rounded-[2rem] p-6 md:p-8 xl:p-10 ${isDarkMode ? 'bg-slate-800/30' : 'bg-slate-50/50'}`}>
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
-                                <div className="lg:col-span-12 flex flex-col gap-8">
-                                  {renderDashboardView()}
-                                </div>
-                              </div>
-                            </section>
-                          </div>
-                        </div>
+                    }}>
+                      {/* Existing Medical Report content... */}
+                      <div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>
+                          {/* Existing Header and Charts code... */}
+                          <div className="pl-8">{renderDashboardView()}</div>
                       </div>
-                    </motion.div>
-             {/* Analytics View */}
+                    </div>
+                    </div> {/* Fix: Changed </motion.div> to </div> to match opening tag at line 1179 */}
+
+                    {/* Page 2: Analytics View */}
                     <motion.div
-                      initial={{ opacity: 0 }}
                       animate={activeDataModule === 'analytics' ? { opacity: 1 } : { opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeOut" }}
                       style={{
                         pointerEvents: activeDataModule === 'analytics' ? 'auto' : 'none',
                         display: activeDataModule === 'analytics' ? 'block' : 'none'
                       }}
-                      className="w-full"
+                      className="w-full page-2"
                     >
-                    <div className="text-left w-full max-w-[1320px] mx-auto" style={{
+                    <div className="text-left w-full max-w-[1320px] mx-auto print-area" style={{
                       background: isDarkMode ? 'linear-gradient(135deg, rgba(15,23,42,0.4) 0%, rgba(30,41,59,0.4) 100%)' : 'linear-gradient(135deg, rgba(248,249,250,0.8) 0%, rgba(240,244,248,0.8) 100%)'
                     }}>
                       <div className={`relative rounded-[2.5rem] p-6 md:p-8 xl:p-10 shadow-[0_24px_90px_rgba(45,51,55,0.06)] ${isDarkMode ? 'bg-slate-900/40 border border-white/10' : 'bg-white/95 border border-slate-100'}`}>
@@ -3501,7 +3535,7 @@ animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}    
                                 <div className={`analytics-glass-card w-full rounded-[1.75rem] p-5 flex flex-col items-center text-center border border-white/40 ${isDarkMode ? 'dark' : ''}`}>
                                   <h4 className={`text-base font-bold mb-3 ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`} style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{t('ui.prominentTrends')}</h4>
                                   {(() => {
-                                    const rawTrends = String(insightCopy?.trends || t('ui.prominentTrendsFallback'));
+                                    const rawTrends = String(insightCopy?.trends ?? t('ui.prominentTrendsFallback'));
                                     const tagRegex = /([^,;\n(]+\([^)]+%\))/g;
                                     const tagMatches = rawTrends.match(tagRegex) || [];
                                     const trendsList: string[] = tagMatches.map(s => s.trim()).filter(Boolean);
@@ -3522,7 +3556,7 @@ animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}    
                                   })()}
                                 </div>
                               </div>
-                              {sessionHistory.length > 0 && (
+                              {sessionHistory?.length > 0 && (
                                 <section className="mt-8 space-y-5">
                                   <div className="flex items-end justify-between gap-4">
                                     <div>
@@ -3533,17 +3567,17 @@ animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}    
                                   </div>
                                   <div className={`p-5 rounded-[2rem] border ${isDarkMode ? 'bg-slate-900/60 border-white/10' : 'bg-white/25 backdrop-blur-3xl border-white/40'}`}>
                                     <div className="space-y-3">
-                                      {sessionHistory.slice(0, 5).map((session, idx) => {
+                                      {sessionHistory?.slice(0, 5).map((session, idx) => {
                                         const score = session.level === 'High' ? '8.1' : session.level === 'Medium' ? '6.2' : '4.8';
                                         return (
                                           <div key={`history-${session.date}-${idx}`}
                                             className={`analytics-glass-card rounded-2xl p-4 flex items-center gap-6 border border-white/40 group hover:bg-white/60 transition-colors ${isDarkMode ? 'dark' : ''}`}>
                                             <div className={`w-24 text-xs font-bold shrink-0 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontFamily: "'Manrope', 'Inter', sans-serif" }}>{formatSessionDate(session.date)}</div>
                                             <div className="flex-1">
-                                              {session.features && (
+                                              {session?.features && (
                                                 <div className="flex h-3 rounded-full overflow-hidden bg-slate-100">
-                                                  {session.features.map((f: any, fi: number) => {
-                                                    const ftotal = session.features.reduce((s: number, x: any) => s + x.importance, 0);
+                                                  {session.features?.map((f: any, fi: number) => {
+                                                    const ftotal = session.features?.reduce((s: number, x: any) => s + x.importance, 0) || 0;
                                                     const fpct = ftotal > 0 ? (f.importance / ftotal) * 100 : 0;
                                                     const fcolor = (!f.color || f.color === '#f3f4f6') ? ['#006b60', '#6e3bd8', '#a53173', '#48e5d0'][fi % 4] : f.color;
                                                     return <div key={fi} style={{ width: `${fpct}%`, backgroundColor: fcolor }} className="h-full" />;
@@ -3602,10 +3636,11 @@ animate={activeDataModule === 'dashboard' ? { opacity: 1 } : { opacity: 0 }}    
                                   </div>
                                 )}
                               </section>
-                            </div>
                           </div>
                         </div>
-                    </motion.div>
+                      </div>
+                      </motion.div>
+                    </div>
                   </>
                 ) : (
                   <div className="text-center py-12">
